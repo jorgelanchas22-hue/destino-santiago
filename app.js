@@ -16,8 +16,6 @@ const RAIZ = "destino2627";
 
 const D = window.DS, L = window.LISTAS;
 const Q = new URLSearchParams(location.search);
-const APOYO_URL = Q.get("apoyo") === "1";
-const ACS_URL = Q.get("acs") === "1";
 const TABS = [
   { id: "brief", t: "0 · Briefing" }, { id: "m1", t: "1 · Ruta" }, { id: "m2", t: "2 · Mochila" },
   { id: "m3", t: "3 · Dinero" }, { id: "m4", t: "4 · Historia" }, { id: "m5", t: "5 · Imprevisto" },
@@ -75,7 +73,7 @@ let tGuardar = null;
 
 function nuevoPasaporte(grupo, miembros, modelo) {
   return {
-    grupo, miembros, modelo, apoyo: APOYO_URL,
+    grupo, miembros, modelo,
     m1: { orden: [], km: null, cien: null, int: 0, ok: false },
     m2: { sel: [], pares: {}, frase: "", int: 0, ok: false },
     m3: { tra: null, aloj: null, com: null, d: "", c: "", t: "", r: "", just: "", int: 0, ok: false },
@@ -85,7 +83,6 @@ function nuevoPasaporte(grupo, miembros, modelo) {
   };
 }
 function M() { return D.MODELOS[S.modelo]; }
-function AP() { return APOYO_URL || !!(S && S.apoyo); }
 function guardar(inmediato) {
   if (!S) return;
   S.upd = Date.now();
@@ -232,8 +229,6 @@ async function pBrief(a) {
     if (!D.MODELOS[modelo] || !D.MODELOS[modelo].activo) { e.textContent = "Ese camino todavía no está disponible. Avisa al profe."; return; }
     const ruta = `pasaportes/${slug(gr.value)}/${equipoId(miembros)}`;
     S = (await store.get(ruta)) || nuevoPasaporte(gr.value, miembros, modelo);
-    if (APOYO_URL) S.apoyo = true;
-    if (ACS_URL && !S.turno) S.turno = { nombre: no.value, r: {} };
     sesion = { grupo: gr.value, nombre: no.value, ruta }; localStorage.setItem("ds_sesion", JSON.stringify(sesion));
     await guardar(true); tab = "m1"; render(); scrollTo(0, 0);
   };
@@ -276,7 +271,7 @@ function pM1(a) {
   const cienOps = ["Porque así se andan al menos los últimos 100 km y se consigue la Compostela", "Porque es la ciudad más grande de Galicia", m.falsoInicio];
   a.innerHTML = cabecera("Misión 1 · Encuentra el camino", `${m.camino}: vuestro tramo empieza en ${m.inicio} y termina en Santiago.`) +
     `<div class="instr">Pulsad las paradas en orden, de ${m.inicio} a Santiago. Se colocarán en el mapa (puntos 1 a 5).</div>
-    ${AP() ? `<div class="pista"><b>Pista:</b> ${m.pistaRuta}</div>` : ""}
+    
     ${mapaSVG(m, st.orden)}
     <div style="margin:10px 0">${libres.map(p => p.n).sort((x, y) => x.localeCompare(y)).map(n => `<span class="chip ${st.orden.includes(n) ? "usado" : ""}" data-p="${esc(n)}">${esc(n)}</span>`).join("")}</div>
     <div class="fila" style="margin-top:0"><button class="btn sec" id="deshacer"><i class="ti ti-arrow-back-up"></i> Quitar la última</button></div>
@@ -291,7 +286,7 @@ function pM1(a) {
     <div class="g3">${mezcla(3, "cien" + S.modelo).map(i => `<button class="op ${st.cien === i ? "sel" : ""}" data-c="${i}">${cienOps[i]}</button>`).join("")}</div>
     <div id="res1">${st.ok ? fb(true, "¡Sello de la Ruta conseguido!") : ""}</div><p class="err" id="err1"></p>
     <div class="fila"><button class="btn" id="comp1"><i class="ti ti-check"></i> Comprobar</button>${siguiente("m1")}<span id="guardado" class="guardado"></span></div>`;
-  enlazarIr(a); montaACS(a, "m1");
+  enlazarIr(a);
   a.querySelectorAll("[data-p]").forEach(c => c.onclick = () => { if (st.orden.includes(c.dataset.p) || st.orden.length >= libres.length) return; st.orden.push(c.dataset.p); guardar(); pM1(a); });
   $("#deshacer").onclick = () => { st.orden.pop(); guardar(); pM1(a); };
   a.querySelectorAll("[data-km]").forEach(b => b.onclick = () => { st.km = +b.dataset.km; guardar(); pM1(a); });
@@ -310,7 +305,7 @@ function pM2(a) {
   const st = S.m2;
   a.innerHTML = cabecera("Misión 2 · Prepara la mochila", "Solo cabe lo importante: cada kilo pesa 115 km.") +
     `<div class="instr">Elegid <b>5 objetos</b> de estos 8. Después comparad vuestra mochila con la de un peregrino de la Edad Media.</div>
-    ${AP() ? `<div class="pista"><b>Pista:</b> pensad en agua, lluvia, sol, heridas y el documento que os sellan.</div>` : ""}
+    
     <div class="g4">${D.MOCHILA.map(o => `<button class="op ${st.sel.includes(o.id) ? "sel" : ""}" data-o="${o.id}" style="text-align:center"><i class="ti ${o.i}"></i><b>${o.n}</b></button>`).join("")}</div>
     <p class="mini">Elegidos: ${st.sel.length}/5</p>
     <h2>Hoy y en la Edad Media</h2>
@@ -318,10 +313,10 @@ function pM2(a) {
     <table class="tabla"><tr><th>Hoy llevamos…</th><th>Un peregrino medieval llevaba…</th></tr>
     ${D.PARES.map((p, i) => `<tr><td>${p.hoy}</td><td><select data-par="${i}"><option value="">Elige</option>${D.PARES_OPC.map(o => `<option ${st.pares[i] === o ? "selected" : ""}>${o}</option>`).join("")}</select></td></tr>`).join("")}</table>
     <label class="et" style="margin-top:14px">Completad la frase</label>
-    <input type="text" id="fr2" value="${esc(st.frase || (AP() ? "En la Edad Media no había … por eso llevaban …" : ""))}" placeholder="En la Edad Media no había … por eso llevaban …">
+    <input type="text" id="fr2" value="${esc(st.frase)}" placeholder="En la Edad Media no había … por eso llevaban …">
     <div id="res2">${st.ok ? fb(true, "¡Sello de la Mochila conseguido!") : ""}</div><p class="err" id="err2"></p>
     <div class="fila"><button class="btn" id="comp2"><i class="ti ti-check"></i> Comprobar</button>${siguiente("m2")}<span id="guardado" class="guardado"></span></div>`;
-  enlazarIr(a); montaACS(a, "m2");
+  enlazarIr(a);
   a.querySelectorAll("[data-o]").forEach(b => b.onclick = () => { const id = b.dataset.o, i = st.sel.indexOf(id); if (i >= 0) st.sel.splice(i, 1); else if (st.sel.length < 5) st.sel.push(id); else { $("#err2").textContent = "Ya tenéis 5. Quitad uno antes de añadir otro."; return; } guardar(); pM2(a); });
   a.querySelectorAll("[data-par]").forEach(s => s.onchange = () => { st.pares[s.dataset.par] = s.value; guardar(); });
   $("#fr2").oninput = e => { st.frase = e.target.value; $("#err2").textContent = ""; guardar(); };
@@ -348,26 +343,25 @@ function pM3(a) {
     ${opc(m.transporte, "tra", `Viaje ${m.viaje} (ida y vuelta)`, "ti-bus")}
     ${opc(D.ALOJ, "aloj", "Dónde dormir (precio por noche)", "ti-bed")}
     ${opc(D.COM, "com", "Cómo comer (precio por día)", "ti-tools-kitchen-2")}
-    ${AP() ? `<div class="pista"><b>Ejemplo de cálculo (con otros números):</b> si gastas 15 € al día durante 3 días: 15 × 3 = 45 €. Si además el viaje cuesta 100 €: 45 + 100 = 145 €. Te quedan 300 − 145 = 155 €.</div>` : ""}
+    
     <table class="tabla">
       <tr><th>Cuenta</th><th>Cómo se hace</th><th style="width:130px">€</th></tr>
-      <tr><td>Gasto diario</td><td>dormir + comer</td><td>${AP() && k ? `<input type="number" id="c_d" value="${k.d}" readonly>` : `<input type="number" id="c_d" value="${esc(st.d)}">`}</td></tr>
+      <tr><td>Gasto diario</td><td>dormir + comer</td><td><input type="number" id="c_d" value="${esc(st.d)}"></td></tr>
       <tr><td>Gasto del Camino</td><td>gasto diario × ${D.DIAS}</td><td><input type="number" id="c_c" value="${esc(st.c)}"></td></tr>
       <tr><td>Gasto total</td><td>gasto del Camino + viaje</td><td><input type="number" id="c_t" value="${esc(st.t)}"></td></tr>
       <tr><td>Dinero restante</td><td>${D.PRESUPUESTO} − gasto total</td><td><input type="number" id="c_r" value="${esc(st.r)}"></td></tr>
     </table>
     <label class="et" style="margin-top:14px">Justificad vuestra decisión</label>
-    <input type="text" id="j3" value="${esc(st.just || (AP() ? "Elegimos … porque así nos quedan … €" : ""))}" placeholder="Elegimos… porque…">
+    <input type="text" id="j3" value="${esc(st.just)}" placeholder="Elegimos… porque…">
     <div id="res3">${st.ok ? fb(true, `¡Sello del Dinero conseguido! Os quedan ${k ? k.r : "?"} €.`) : ""}</div><p class="err" id="err3"></p>
     <div class="fila"><button class="btn" id="comp3"><i class="ti ti-check"></i> Comprobar</button>${siguiente("m3")}<span id="guardado" class="guardado"></span></div>
     <div class="pista" style="margin-top:18px"><b>¿Y en la Edad Media?</b> El peregrino no pagaba albergue: se alojaba en hospitales de peregrinos y monasterios que lo acogían por caridad, normalmente gratis y durante pocas noches.</div>`;
-  enlazarIr(a); montaACS(a, "m3");
+  enlazarIr(a);
   ["tra", "aloj", "com"].forEach(c => a.querySelectorAll(`[data-${c}]`).forEach(b => b.onclick = () => { st[c] = b.dataset[c]; st.ok = false; guardar(); pM3(a); }));
   [["c_d", "d"], ["c_c", "c"], ["c_t", "t"], ["c_r", "r"]].forEach(([id, f]) => { const el = $("#" + id); el.oninput = () => { st[f] = el.value; $("#err3").textContent = ""; guardar(); }; });
   $("#j3").oninput = e => { st.just = e.target.value; $("#err3").textContent = ""; guardar(); };
   $("#comp3").onclick = () => {
     if (!st.tra || !st.aloj || !st.com) { $("#err3").textContent = "Elegid viaje, alojamiento y comida."; return; }
-    if (AP()) st.d = String(calc3(S, m).d);
     if (["d", "c", "t", "r"].some(f => st[f] === "" || st[f] == null)) { $("#err3").textContent = "Rellenad las cuatro casillas de la tabla."; return; }
     if (!conPorque(st.just) || /…/.test(st.just)) { $("#err3").textContent = "Escribid una frase completa con «porque» (sin dejar «…»)."; return; }
     st.int++; const k = calc3(S, m), f = [];
@@ -389,7 +383,7 @@ function pM4(a) {
     `<div class="instr">Mirad cada foto y elegid <b>para qué servía</b> ese lugar. Después contestad sobre la acogida y los intercambios.</div>
     <div class="g3">${m.lugares.map(l => `<div><img class="foto" src="${l.img}" alt="${esc(l.n)}, ${esc(l.lugar)}" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'foto',textContent:''}))">
       <p class="credito">${l.credito}</p><b>${l.n}</b><br><span class="mini">${l.lugar} · ${l.fecha}</span>
-      ${AP() ? `<div class="pista">${l.pista}</div>` : `<details style="margin:6px 0"><summary class="mini">Ver pista</summary><div class="pista">${l.pista}</div></details>`}
+      <details style="margin:6px 0"><summary class="mini">Ver pista</summary><div class="pista">${l.pista}</div></details>
       <select data-f="${l.id}"><option value="">¿Para qué servía?</option>${D.FUNCIONES.map(f => `<option value="${f.id}" ${st.f[l.id] === f.id ? "selected" : ""}>${f.n}</option>`).join("")}</select></div>`).join("")}</div>
     <h2>La acogida al peregrino</h2>
     <div class="pista"><b>Tarjeta:</b> en la Edad Media, iglesias, monasterios, reyes y cofradías mantenían hospitales para acoger a los peregrinos. Allí les daban cama, comida y cuidados, casi siempre gratis y durante pocas noches.</div>
@@ -400,10 +394,10 @@ function pM4(a) {
     <label class="et">¿Qué viajaba con los peregrinos?</label>
     <div class="g3">${(o => mezcla(3, "inter").map(i => `<button class="op ${st.inter === i ? "sel" : ""}" data-in="${i}">${o[i]}</button>`).join(""))(["Ideas, noticias, lenguas, productos y estilos artísticos", "Solo dinero", "Nada: cada uno iba solo y sin hablar"])}</div>
     <label class="et" style="margin-top:14px">Completad la frase</label>
-    <input type="text" id="fr4" value="${esc(st.frase || (AP() ? "En un hospital de peregrinos te podías encontrar con gente de … y por eso …" : ""))}" placeholder="En un hospital de peregrinos te podías encontrar con gente de … y por eso …">
+    <input type="text" id="fr4" value="${esc(st.frase)}" placeholder="En un hospital de peregrinos te podías encontrar con gente de … y por eso …">
     <div id="res4">${st.ok ? fb(true, "¡Sello de la Historia conseguido!") : ""}</div><p class="err" id="err4"></p>
     <div class="fila"><button class="btn" id="comp4"><i class="ti ti-check"></i> Comprobar</button>${siguiente("m4")}<span id="guardado" class="guardado"></span></div>`;
-  enlazarIr(a); montaACS(a, "m4");
+  enlazarIr(a);
   a.querySelectorAll("[data-f]").forEach(s => s.onchange = () => { st.f[s.dataset.f] = s.value; guardar(); });
   a.querySelectorAll("[data-ac]").forEach(b => b.onclick = () => { st.acog = +b.dataset.ac; guardar(); pM4(a); });
   a.querySelectorAll("[data-in]").forEach(b => b.onclick = () => { st.inter = +b.dataset.in; guardar(); pM4(a); });
@@ -427,7 +421,7 @@ function pM5(a) {
     `<div class="reto"><b><i class="ti ti-alert-triangle"></i> ${im.titulo}</b><br>${im.texto}</div>
     <div class="instr">Elegid una solución, actualizad vuestro dinero y explicad la decisión. Ahora os quedan <b>${k.r} €</b>.</div>
     <div class="g3">${im.opciones.map(o => `<button class="op ${st.op === o.id ? "sel" : ""}" data-op="${o.id}"><b>${o.n}</b><small>${o.det}</small></button>`).join("")}</div>
-    ${AP() ? `<div class="pista"><b>Pista:</b> «se añade» = pagáis algo nuevo además de lo que ya habíais pensado. «Sustituye» = cambiáis un gasto por otro y no pagáis los dos.</div>` : ""}
+    
     <table class="tabla" style="margin-top:14px">
       <tr><td>El gasto nuevo…</td><td><select id="t5"><option value="">Elige</option>${tipos.map(([v, t]) => `<option value="${v}" ${st.tipo === v ? "selected" : ""}>${t}</option>`).join("")}</select></td></tr>
       <tr><td>Nuevo dinero restante (€)</td><td><input type="number" id="r5" value="${esc(st.rest)}"></td></tr>
@@ -435,7 +429,7 @@ function pM5(a) {
       <tr><td>¿Conseguiréis la Compostela?</td><td><select id="c5"><option value="">Elige</option><option value="0" ${st.compo === 0 ? "selected" : ""}>Sí</option><option value="1" ${st.compo === 1 ? "selected" : ""}>No</option></select></td></tr>
     </table>
     <label class="et" style="margin-top:14px">Justificad</label>
-    <input type="text" id="j5" value="${esc(st.just || (AP() ? "Elegimos … porque …" : ""))}" placeholder="Elegimos… porque…">
+    <input type="text" id="j5" value="${esc(st.just)}" placeholder="Elegimos… porque…">
     <div id="res5">${st.ok ? fb(true, "¡Sello del Imprevisto conseguido!") : ""}</div><p class="err" id="err5"></p>
     <div class="fila"><button class="btn" id="comp5"><i class="ti ti-check"></i> Comprobar</button>${siguiente("m5")}<span id="guardado" class="guardado"></span></div>`;
   enlazarIr(a);
@@ -460,92 +454,6 @@ function pM5(a) {
   };
 }
 
-/* ----- Versión adaptada (ACS): turnos dentro del equipo ----- */
-const TTS = "speechSynthesis" in window;
-function leer(t) { if (!TTS) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.lang = "es-ES"; u.rate = 0.9; speechSynthesis.speak(u); }
-function botonLeer(t) { return TTS ? `<button class="btn sec" style="padding:6px 10px;font-size:14px" data-leer="${esc(t)}"><i class="ti ti-volume"></i> Escuchar</button>` : ""; }
-function opDos(clave, i, txt, sel, icono) { return `<button class="op ${sel ? "sel" : ""}" data-acs="${clave}" data-v="${esc(i)}" style="text-align:center">${icono ? `<i class="ti ${icono}"></i>` : ""}<b>${txt}</b></button>`; }
-function montaACS(a, mid) {
-  if (!S || !S.turno) return;
-  const n = S.turno.nombre, R = S.turno.r[mid] || (S.turno.r[mid] = {}), m = M();
-  let html = "", instr = "", check = null;
-  if (mid === "m1") {
-    const tres = [m.paradas[0].n, m.acsMedio, "Santiago"], chips = [tres[2], tres[0], tres[1]];
-    R.orden = R.orden || [];
-    instr = `Toca las 3 paradas en orden: primero donde empezáis, al final Santiago.`;
-    html = `<div class="mini">Ayuda: empezáis en ${esc(tres[0])} (la estrella del mapa). Santiago es el final.</div>
-      <div class="cred" style="margin:8px 0">${[0, 1, 2].map(i => `<div class="sello ${R.orden[i] ? "on" : ""}" style="width:auto;min-width:90px;border-radius:8px;padding:4px">${i + 1}. ${esc(R.orden[i] || "")}</div>`).join("")}</div>
-      <div>${chips.map(c => `<span class="chip ${R.orden.includes(c) ? "usado" : ""}" data-acs="orden" data-v="${esc(c)}" style="font-size:18px;padding:8px 14px">${esc(c)}</span>`).join("")}</div>
-      <div class="fila" style="margin-top:6px"><button class="btn sec" data-acs="borrar" data-v="">Empezar otra vez</button></div>`;
-    check = () => JSON.stringify(R.orden) === JSON.stringify(tres);
-  }
-  if (mid === "m2") {
-    const pares = [["agua", "consola"], ["maleta", "lluvia"], ["botiquin", "portatil"]], O = id => D.MOCHILA.find(o => o.id === id);
-    R.sel = R.sel || {};
-    instr = "En cada fila, elige lo que SÍ llevas en la mochila.";
-    html = pares.map((p, k) => `<div class="g2" style="margin-bottom:8px">${p.map(id => opDos("m2_" + k, id, O(id).n, R.sel[k] === id, O(id).i)).join("")}</div>`).join("");
-    check = () => pares.every((p, k) => R.sel[k] && O(R.sel[k]).ok);
-  }
-  if (mid === "m3") {
-    instr = "Tenéis pocas monedas. ¿Dónde dormís? Después cuenta las monedas de 5 noches.";
-    const moneda = k => Array(k).fill('<i class="ti ti-coin" style="font-size:22px;color:#b88a00"></i>').join("");
-    html = `<div class="g2">${opDos("dorm", "alb", `Albergue<br>${moneda(1)}<br><small>1 moneda por noche</small>`, R.dorm === "alb")}${opDos("dorm", "hot", `Hotel<br>${moneda(5)}<br><small>5 monedas por noche</small>`, R.dorm === "hot")}</div>
-      <label class="et" style="margin-top:10px">Albergue: ¿cuántas monedas son 5 noches?</label>
-      <div class="g2">${opDos("mon", "25", "25 monedas", R.mon === "25")}${opDos("mon", "5", "5 monedas", R.mon === "5")}</div>`;
-    check = () => R.dorm === "alb" && R.mon === "5";
-  }
-  if (mid === "m4") {
-    const f = { puente: ["Cruzar el río", "Dormir"], hospital: ["Comprar comida", "Dormir y curarse"], iglesia: ["Rezar", "Cruzar el río"] }, ok = { puente: "Cruzar el río", hospital: "Dormir y curarse", iglesia: "Rezar" };
-    R.f = R.f || {};
-    instr = "Mira cada foto. ¿Para qué servía?";
-    html = m.lugares.map(l => `<div class="g3" style="align-items:center;margin-bottom:8px"><img class="foto" style="aspect-ratio:4/3" src="${l.img}" alt="${esc(l.n)}">${f[l.id].map(t => opDos("m4_" + l.id, t, t, R.f[l.id] === t)).join("")}</div>`).join("");
-    check = () => m.lugares.every(l => R.f[l.id] === ok[l.id]);
-  }
-  if (!html) return;
-  const box = document.createElement("div");
-  box.className = "caja"; box.style.borderColor = "#1f5fbf";
-  box.innerHTML = `<div class="fila" style="margin-top:0;justify-content:space-between"><h2 style="margin:0"><i class="ti ti-user-star"></i> Turno de ${esc(corto(n))}</h2>${botonLeer(instr)}</div>
-    <p style="font-size:18px">${instr}</p>${html}<div id="acsRes">${R.ok ? fb(true, "¡Muy bien! Turno superado.") : ""}</div>
-    <div class="fila"><button class="btn" data-acs="comprobar" data-v="">Comprobar mi turno</button></div>`;
-  a.appendChild(box);
-  box.querySelectorAll("[data-leer]").forEach(b => b.onclick = () => leer(b.dataset.leer));
-  box.querySelectorAll("[data-acs]").forEach(b => b.onclick = () => {
-    const k = b.dataset.acs, v = b.dataset.v;
-    if (k === "orden") { if (!R.orden.includes(v) && R.orden.length < 3) R.orden.push(v); }
-    else if (k === "borrar") R.orden = [];
-    else if (k === "comprobar") { R.ok = !!check(); R.int = (R.int || 0) + 1; guardar(true); box.querySelector("#acsRes").innerHTML = R.ok ? fb(true, "¡Muy bien! Turno superado.") : fb(false, "Casi. Mira otra vez y vuelve a probar."); if (R.ok) leer("¡Muy bien!"); return; }
-    else if (k.startsWith("m2_")) R.sel[k.slice(3)] = v;
-    else if (k.startsWith("m4_")) R.f[k.slice(3)] = v;
-    else R[k] = v;
-    R.ok = false; guardar();
-    ({ m1: pM1, m2: pM2, m3: pM3, m4: pM4 })[mid](a);
-  });
-}
-function pintaIndACS(c, n) {
-  const r = S.ind[n] || (S.ind[n] = {}), hecho = !!r.entregado, m = M(), hosp = m.lugares.find(l => l.id === "hospital");
-  const misiones = ["Ruta", "Mochila", "Dinero", "Historia", "Imprevisto"];
-  const b = (campo, v, t, ic) => `<button class="op ${r[campo] === v ? "sel" : ""}" data-c="${campo}" data-v="${esc(v)}" ${hecho ? "disabled" : ""} style="text-align:center">${ic ? `<i class="ti ${ic}"></i>` : ""}<b>${t}</b></button>`;
-  c.innerHTML = `<div class="caja" style="border-color:#1f5fbf"><h2 style="margin-top:0">${esc(n)}</h2>
-    <div class="fila" style="margin-top:0"><b style="font-size:18px">1. ¿Para qué servía este edificio?</b>${botonLeer("¿Para qué servía este edificio?")}</div>
-    <div class="g3" style="align-items:center"><img class="foto" src="${hosp.img}" alt="${esc(hosp.n)}">${b("aq1", "ok", "Para dormir y curarse")}${b("aq1", "no", "Para cruzar el río")}</div>
-    <div class="fila"><b style="font-size:18px">2. ¿Qué llevaba el peregrino para el agua?</b>${botonLeer("¿Qué llevaba el peregrino para el agua?")}</div>
-    <div class="g2">${b("aq2", "no", "Un móvil", "ti-device-mobile")}${b("aq2", "ok", "Una calabaza", "ti-bottle")}</div>
-    <div class="fila"><b style="font-size:18px">3. ¿Qué misión te ha gustado más?</b>${botonLeer("¿Qué misión te ha gustado más?")}</div>
-    <div class="g3">${misiones.map(x => b("aq3", x, x)).join("")}</div>
-    <label class="et" style="margin-top:8px">Cuéntalo (puedes pedir ayuda):</label><input type="text" id="aq3f" value="${esc(r.aq3f || "")}" ${hecho ? "disabled" : ""}>
-    <p class="err" id="errI"></p>
-    ${hecho ? [fb(r.aq1 === "ok", r.aq1 === "ok" ? "Pregunta 1: ¡bien!" : "Pregunta 1: servía para dormir y curarse."), fb(r.aq2 === "ok", r.aq2 === "ok" ? "Pregunta 2: ¡bien!" : "Pregunta 2: llevaba una calabaza.")].join("") : `<div class="fila"><button class="btn" id="entregar"><i class="ti ti-send"></i> Entregar</button></div>`}</div>`;
-  c.querySelectorAll("[data-leer]").forEach(x => x.onclick = () => leer(x.dataset.leer));
-  if (hecho) return;
-  c.querySelectorAll("[data-c]").forEach(x => x.onclick = () => { r[x.dataset.c] = x.dataset.v; r.adaptado = true; guardar(); pintaIndACS(c, n); });
-  $("#aq3f").oninput = e => { r.aq3f = e.target.value; guardar(); };
-  $("#entregar").onclick = async () => {
-    if (!r.aq1 || !r.aq2 || !r.aq3) { $("#errI").textContent = "Contesta las tres preguntas."; return; }
-    const bt = $("#entregar"); if (!bt.dataset.seguro) { bt.dataset.seguro = "1"; bt.innerHTML = "¿Seguro? Pulsa otra vez"; return; }
-    r.adaptado = true; r.entregado = Date.now(); await guardar(true); pFin($("#app")); pintaIndACS($("#indiv"), n);
-  };
-}
-
 /* ----- Llegada (individual) ----- */
 function pFin(a) {
   const C = D.CIERRE;
@@ -558,7 +466,6 @@ function pFin(a) {
   a.querySelectorAll("[data-al]").forEach(b => b.onclick = () => pintaInd($("#indiv"), b.dataset.al));
 }
 function pintaInd(c, n) {
-  if (S.turno && S.turno.nombre === n) return pintaIndACS(c, n);
   const C = D.CIERRE, r = S.ind[n] || (S.ind[n] = {}), hecho = !!r.entregado;
   const ops = (q, campo) => (campo === "q3" ? [...q.o.keys()] : mezcla(q.o.length, campo)).map(i => `<button class="op ${r[campo] === i ? "sel" : ""}" data-${campo}="${i}" ${hecho ? "disabled" : ""}>${q.o[i]}</button>`).join("");
   c.innerHTML = `<div class="caja"><h2 style="margin-top:0">${esc(n)}</h2>
@@ -566,7 +473,7 @@ function pintaInd(c, n) {
     <label class="et" style="margin-top:14px">2. ${C.q2.t}</label><div class="g3">${ops(C.q2, "q2")}</div>
     <label class="et" style="margin-top:8px">${C.q2.frase}</label><input type="text" id="q2f" value="${esc(r.q2f || "")}" ${hecho ? "disabled" : ""}>
     <label class="et" style="margin-top:14px">3. ${C.q3.t}</label><div class="g4">${ops(C.q3, "q3")}</div>
-    <label class="et" style="margin-top:8px">${C.q3.frase}</label><input type="text" id="q3f" value="${esc(r.q3f || (AP() && !hecho ? "La defiendo porque …" : ""))}" ${hecho ? "disabled" : ""}>
+    <label class="et" style="margin-top:8px">${C.q3.frase}</label><input type="text" id="q3f" value="${esc(r.q3f || "")}" ${hecho ? "disabled" : ""}>
     <p class="err" id="errI"></p>
     ${hecho ? `<div id="corrI">${correccionInd(r)}</div>` : `<div class="fila"><button class="btn" id="entregar"><i class="ti ti-send"></i> Entregar mis respuestas</button></div>`}</div>`;
   if (hecho) return;
@@ -599,26 +506,21 @@ async function pintaPanel(a) {
   a.querySelectorAll("[data-v]").forEach(b => b.onclick = () => { pVista = b.dataset.v; pintaPanel(a); });
   if (pVista === "seg") return panelSeg($("#pv")); return panelEq($("#pv"));
 }
-function adaptada(p, n) {
-  if (!p.turno || p.turno.nombre !== n) return null;
-  const t = ["m1", "m2", "m3", "m4"].filter(m => (p.turno.r[m] || {}).ok).length, r = (p.ind || {})[n] || {}, c = (r.aq1 === "ok" ? 1 : 0) + (r.aq2 === "ok" ? 1 : 0);
-  return { t, c, niv: t + c >= 5 ? "Logrado" : t + c >= 3 ? "En proceso" : "Inicial" };
-}
 async function panelSeg(c) {
   const ps = Object.values(await store.hijos(`pasaportes/${slug(pGrupo)}`));
   if (!ps.length) { c.innerHTML = `<p>Todavía no hay pasaportes en ${pGrupo}.</p>`; return; }
   const filas = [];
-  ps.sort((x, y) => x.miembros[0].localeCompare(y.miembros[0])).forEach(p => p.miembros.forEach((n, i) => { const pr = propuesta(p, n); filas.push({ p, n, pr, primero: i === 0, ad: adaptada(p, n) }); }));
-  c.innerHTML = `<p class="mini">El alumnado con versión adaptada se valora con indicadores propios (Logrado · En proceso · Inicial), no con los criterios de 2.º. Notas propuestas con valores 10 · 7 · 5 · 2 por criterio (C1 comprensión histórica · C2 orientación espacial · C3 decisiones justificadas) y media. Los textos los valoras tú.</p>
+  ps.sort((x, y) => x.miembros[0].localeCompare(y.miembros[0])).forEach(p => p.miembros.forEach((n, i) => { const pr = propuesta(p, n); filas.push({ p, n, pr, primero: i === 0 }); }));
+  c.innerHTML = `<p class="mini">Notas propuestas con valores 10 · 7 · 5 · 2 por criterio (C1 comprensión histórica · C2 orientación espacial · C3 decisiones justificadas) y media. Los textos los valoras tú.</p>
     <table class="tabla panelt"><tr><th>Alumno/a</th><th>Equipo · camino</th><th>Sellos</th><th>Intentos M1–M5</th><th>Cierre</th><th>C1</th><th>C2</th><th>C3</th><th>Media</th></tr>
-    ${filas.map(f => `<tr><td>${esc(f.n)}${f.p.apoyo ? " <span class='mini'>(apoyos)</span>" : ""}</td><td>${f.primero ? esc(f.p.miembros.map(corto).join(" · ")) + " · " + f.p.modelo : ""}</td><td>${["m1", "m2", "m3", "m4", "m5"].filter(m => f.p[m].ok).length}/5</td><td>${["m1", "m2", "m3", "m4", "m5"].map(m => f.p[m].int).join("·")}</td><td>${(f.p.ind || {})[f.n] && f.p.ind[f.n].entregado ? "✓" : "—"}</td>${f.ad ? `<td colspan="4" style="background:#eaf1fc">Versión adaptada · turnos ${f.ad.t}/4 · cierre ${f.ad.c}/2 · ${f.ad.niv}</td>` : `<td>${f.pr.c1}</td><td>${f.pr.c2}</td><td>${f.pr.c3}</td><td class="nota">${f.pr.media}</td>`}</tr>`).join("")}</table>
+    ${filas.map(f => `<tr><td>${esc(f.n)}</td><td>${f.primero ? esc(f.p.miembros.map(corto).join(" · ")) + " · " + f.p.modelo : ""}</td><td>${["m1", "m2", "m3", "m4", "m5"].filter(m => f.p[m].ok).length}/5</td><td>${["m1", "m2", "m3", "m4", "m5"].map(m => f.p[m].int).join("·")}</td><td>${(f.p.ind || {})[f.n] && f.p.ind[f.n].entregado ? "✓" : "—"}</td><td>${f.pr.c1}</td><td>${f.pr.c2}</td><td>${f.pr.c3}</td><td class="nota">${f.pr.media}</td></tr>`).join("")}</table>
     <div class="fila"><button class="btn sec" id="csv"><i class="ti ti-table-export"></i> Descargar CSV</button></div>
     <h2>Textos de cada equipo</h2>${ps.map(p => `<details class="caja"><summary>${esc(p.miembros.join(" · "))} · ${p.modelo}</summary>
       <p><b>M2 frase:</b> ${esc(p.m2.frase)}</p><p><b>M3:</b> ${esc([p.m3.tra, p.m3.aloj, p.m3.com].join(" + "))} — ${esc(p.m3.just)}</p>
       <p><b>M4 frase:</b> ${esc(p.m4.frase)}</p><p><b>M5:</b> opción ${esc(p.m5.op)} — ${esc(p.m5.just)}</p>
       ${p.miembros.map(n => { const r = (p.ind || {})[n] || {}; return `<p><b>${esc(corto(n))}:</b> Q2: ${esc(r.q2f || "—")} · Q3 (${r.q3 != null ? esc(D.CIERRE.q3.o[r.q3]) : "—"}): ${esc(r.q3f || "—")}</p>`; }).join("")}</details>`).join("")}`;
   $("#csv").onclick = () => {
-    const rows = [["Grupo", "Alumno", "Equipo", "Modelo", "Sellos", "C1", "C2", "C3", "Media"]].concat(filas.map(f => [pGrupo, f.n, f.p.miembros.join(" / "), f.p.modelo, ["m1", "m2", "m3", "m4", "m5"].filter(m => f.p[m].ok).length, f.ad ? "adaptada" : f.pr.c1, f.ad ? "" : f.pr.c2, f.ad ? "" : f.pr.c3, f.ad ? f.ad.niv : f.pr.media]));
+    const rows = [["Grupo", "Alumno", "Equipo", "Modelo", "Sellos", "C1", "C2", "C3", "Media"]].concat(filas.map(f => [pGrupo, f.n, f.p.miembros.join(" / "), f.p.modelo, ["m1", "m2", "m3", "m4", "m5"].filter(m => f.p[m].ok).length, f.pr.c1, f.pr.c2, f.pr.c3, f.pr.media]));
     const blob = new Blob(["﻿" + rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(";")).join("\n")], { type: "text/csv" });
     const u = URL.createObjectURL(blob), l = document.createElement("a"); l.href = u; l.download = `destino-santiago-${slug(pGrupo)}.csv`; l.click();
   };

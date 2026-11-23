@@ -58,7 +58,6 @@ window.DS = {
         { n: "O Pedrouzo", km: 95, lat: 42.905, lon: -8.360 },
         { n: "Santiago", km: 115, lat: 42.880, lon: -8.544 }
       ],
-      acsMedio: "Palas de Rei",
       pistaRuta: "Santiago está al oeste. La parada más cercana a Sarria es Portomarín.",
       kmOpciones: ["Unos 115 km", "Unos 780 km", "Unos 30 km"],
       falsoInicio: "Porque allí empieza el Camino Francés",
@@ -116,7 +115,6 @@ window.DS = {
         { n: "Padrón", km: 91, lat: 42.738, lon: -8.660 },
         { n: "Santiago", km: 115, lat: 42.880, lon: -8.544 }
       ],
-      acsMedio: "Pontevedra",
       pistaRuta: "Santiago está al norte. La parada más cercana a Tui es Redondela.",
       kmOpciones: ["Unos 115 km", "Unos 620 km", "Unos 30 km"],
       falsoInicio: "Porque allí empieza el Camino Portugués",
