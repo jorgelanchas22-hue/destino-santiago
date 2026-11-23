@@ -43,6 +43,7 @@ window.DS = {
       activo: true,
       camino: "Camino Francés",
       inicio: "Sarria",
+      pasos: [["Barbadelo", "Ferreiros"], ["Gonzar", "Ligonde"], ["Furelos", "Melide"], ["Salceda", "A Rúa"], ["Lavacolla", "Monte do Gozo"]],
       viaje: "Sevilla ↔ Sarria",
       transporte: [
         { id: "bus", n: "Autobús", p: 120, d: "el más lento", i: "ti-bus" },
@@ -101,6 +102,7 @@ window.DS = {
       activo: true,
       camino: "Camino Portugués",
       inicio: "Tui",
+      pasos: [["O Porriño", "Mos"], ["Arcade", "Ponte Sampaio"], ["San Amaro", "Briallos"], ["Valga", "Pontecesures"], ["A Escravitude", "O Milladoiro"]],
       viaje: "Sevilla ↔ Tui",
       transporte: [
         { id: "bus", n: "Autobús", p: 120, d: "el más lento", i: "ti-bus" },
@@ -158,6 +160,7 @@ window.DS = {
       activo: true,
       camino: "Camino Inglés",
       inicio: "Ferrol",
+      pasos: [["Neda", "Fene", "Cabanas"], ["Miño"], ["Presedo"], ["Poulo"], ["Puente medieval sobre el río Tambre"]],
       viaje: "Sevilla ↔ Ferrol",
       transporte: [
         { id: "bus", n: "Autobús", p: 120, d: "el más lento", i: "ti-bus" },
@@ -215,6 +218,7 @@ window.DS = {
       activo: true,
       camino: "Vía de la Plata (Camino Sanabrés)",
       inicio: "Ourense",
+      pasos: [["Tamallancos", "Sobreira"], ["Piñor (o el monasterio de Oseira, por la variante)"], ["A Laxe"], ["Bandeira", "Ponte Ulla"], []],
       viaje: "Sevilla ↔ Ourense",
       transporte: [
         { id: "bus", n: "Autobús", p: 120, d: "el más lento", i: "ti-bus" },

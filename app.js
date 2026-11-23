@@ -269,6 +269,10 @@ function pintaEjemplo(c) {
 }
 
 /* ----- 1 · Ruta ----- */
+function hojaRuta(m) {
+  return `<h2><i class="ti ti-map-pin"></i> Vuestra hoja de ruta</h2><table class="tabla"><tr><th>Día</th><th>Etapa</th><th>Km</th><th>Pueblos y lugares por los que pasáis</th></tr>
+  ${m.paradas.slice(1).map((p, i) => `<tr><td>${i + 1}</td><td><b>${esc(m.paradas[i].n)} → ${esc(p.n)}</b></td><td>${p.km - m.paradas[i].km}</td><td>${(m.pasos[i] || []).map(esc).join(" · ") || "—"}</td></tr>`).join("")}</table>`;
+}
 function mapaSVG(m, orden) {
   const ps = m.paradas, lat0 = ps.reduce((s, p) => s + p.lat, 0) / ps.length, k = Math.cos(lat0 * Math.PI / 180);
   const xs = ps.map(p => p.lon * k), ys = ps.map(p => p.lat);
@@ -308,7 +312,7 @@ function pM1(a) {
     <label class="et" style="margin-top:14px">¿Por qué mucha gente empieza en ${m.inicio}?</label>
     <div class="pista"><b>Tarjeta · La Compostela:</b> es el documento que da la Oficina del Peregrino. Para conseguirla hay que andar al menos los últimos 100 km y llevar la credencial sellada.</div>
     <div class="g3">${mezcla(3, "cien" + S.modelo).map(i => `<button class="op ${st.cien === i ? "sel" : ""}" data-c="${i}">${cienOps[i]}</button>`).join("")}</div>
-    <div id="res1">${st.ok ? fb(true, "¡Sello de la Ruta conseguido!") : ""}</div><p class="err" id="err1"></p>
+    <div id="res1">${st.ok ? fb(true, "¡Sello de la Ruta conseguido!") + hojaRuta(m) : ""}</div><p class="err" id="err1"></p>
     <div class="fila"><button class="btn" id="comp1"><i class="ti ti-check"></i> Comprobar</button>${siguiente("m1")}<span id="guardado" class="guardado"></span></div>`;
   enlazarIr(a);
   a.querySelectorAll("[data-p]").forEach(c => c.onclick = () => { if (st.orden.includes(c.dataset.p) || st.orden.length >= libres.length) return; st.orden.push(c.dataset.p); guardar(); pM1(a); });
@@ -320,7 +324,7 @@ function pM1(a) {
     st.int++; const e = evalua(S).m1; st.ok = e.orden && e.km && e.cien;
     const f = []; if (!e.orden) f.push("El orden de las paradas no es correcto. Mirad la flecha del norte y dónde está Santiago."); if (!e.km) f.push("Revisad los km: es solo vuestro tramo, no el Camino entero."); if (!e.cien) f.push("Revisad por qué se empieza en " + m.inicio + ": leed la tarjeta de la Compostela.");
     guardar(true); pintaCab();
-    $("#res1").innerHTML = st.ok ? fb(true, `¡Sello de la Ruta conseguido! Vuestro tramo: ${libres.map(p => p.n + " (km " + p.km + ")").join(" → ")}.`) : fb(false, f.join("<br>"));
+    $("#res1").innerHTML = st.ok ? fb(true, `¡Sello de la Ruta conseguido! Vuestro tramo: ${libres.map(p => p.n + " (km " + p.km + ")").join(" → ")}.`) + hojaRuta(m) : fb(false, f.join("<br>"));
   };
 }
 
@@ -451,7 +455,7 @@ function pM5(a) {
     const bloqueadoPorImp = i + 1 > im.dia && !st.impOk;
     if (i > 0 && st.dias[i - 1] == null) break;
     if (bloqueadoPorImp) break;
-    html += `<div class="caja"><b>Día ${i + 1} · ${esc(de)} → ${esc(aa)}</b><p style="margin:6px 0">${c.t.replace(/\{de\}/g, de).replace(/\{a\}/g, aa)}</p>
+    html += `<div class="caja"><b>Día ${i + 1} · ${esc(de)} → ${esc(aa)} (${m.paradas[i + 1].km - m.paradas[i].km} km)</b>${(m.pasos[i] || []).length ? `<div class="mini"><i class="ti ti-map-pin"></i> Pasáis por: ${m.pasos[i].map(esc).join(" · ")}</div>` : ""}<p style="margin:6px 0">${c.t.replace(/\{de\}/g, de).replace(/\{a\}/g, aa)}</p>
       <div class="g2">${c.o.map((o, j) => `<button class="op ${v === j ? "sel" : ""}" data-dia="${i}" data-v="${j}" ${v != null ? "disabled" : ""}><b>${o.n}</b><small>${o.c ? o.c + " € más" : "0 €"}</small></button>`).join("")}</div>
       ${v != null ? `<div class="fb ${i === 2 && v === 1 ? "mal" : "ok"}" style="margin-bottom:0">${c.o[v].r}</div>` : ""}</div>`;
     if (i + 1 === im.dia && v != null) html += bloqueImp(im, k);
