@@ -154,8 +154,120 @@ window.DS = {
         ]
       }
     },
-    C: { activo: false, camino: "Camino Inglés", inicio: "Ferrol" },
-    D: { activo: false, camino: "Vía de la Plata", inicio: "Ourense" }
+    C: {
+      activo: true,
+      camino: "Camino Inglés",
+      inicio: "Ferrol",
+      viaje: "Sevilla ↔ Ferrol",
+      transporte: [
+        { id: "bus", n: "Autobús", p: 120, d: "el más lento", i: "ti-bus" },
+        { id: "tren", n: "Tren", p: 160, d: "con transbordo", i: "ti-train" },
+        { id: "avion", n: "Avión", p: 200, d: "+ bus hasta Ferrol", i: "ti-plane" }
+      ],
+      paradas: [
+        { n: "Ferrol", km: 0, lat: 43.484, lon: -8.233, fija: true },
+        { n: "Pontedeume", km: 28, lat: 43.407, lon: -8.170 },
+        { n: "Betanzos", km: 48, lat: 43.280, lon: -8.212 },
+        { n: "Hospital de Bruma", km: 72, lat: 43.140, lon: -8.275 },
+        { n: "Sigüeiro", km: 96, lat: 42.966, lon: -8.441 },
+        { n: "Santiago", km: 113, lat: 42.880, lon: -8.544 }
+      ],
+      pistaRuta: "Santiago está al sur. La parada más cercana a Ferrol es Pontedeume.",
+      kmOpciones: ["Unos 113 km", "Unos 780 km", "Unos 30 km"],
+      falsoInicio: "Porque allí está la catedral de Santiago",
+      totalKm: 113,
+      completo: "Los peregrinos de Inglaterra, Irlanda y el norte de Europa hacían casi todo el viaje en barco y desembarcaban en Ferrol o A Coruña. Por eso a pie solo les quedaba este tramo.",
+      mapaCompleto: {
+        src: "https://commons.wikimedia.org/wiki/Special:FilePath/Caminos%20Santiago%20actuales%20-%2002%20Rutas%20jacobeas%20en%20Galicia.svg?width=600",
+        credito: "Mapa: Paulusburg, Wikimedia Commons, CC BY-SA 4.0"
+      },
+      lugares: [
+        {
+          id: "puente", n: "Puente de Pontedeume", lugar: "Pontedeume", fecha: "El puente medieval era del siglo XIV; el actual, del XIX",
+          pista: "Cruza la ría del Eume. El puente medieval era tan largo que tenía encima una capilla y un hospital.",
+          img: "https://commons.wikimedia.org/wiki/Special:FilePath/Pontedeume%20-%20Ponte%20-%2001.jpg?width=640",
+          credito: "Foto: Xosema, Wikimedia Commons, CC BY-SA 4.0"
+        },
+        {
+          id: "hospital", n: "Hospital de Bruma", lugar: "Mesía (A Coruña)", fecha: "Funcionó desde la Edad Media hasta el siglo XVIII",
+          pista: "El pueblo se llama así por él. Hoy en el mismo sitio hay un albergue de peregrinos.",
+          img: "https://commons.wikimedia.org/wiki/Special:FilePath/Hospital%20de%20Bruma%206.jpg?width=640",
+          credito: "Foto: Miguel Branco, Wikimedia Commons, CC BY-SA 4.0"
+        },
+        {
+          id: "iglesia", n: "Iglesia de Santiago", lugar: "Betanzos", fecha: "Gótica, del siglo XV",
+          pista: "Está dedicada al apóstol al que iban a visitar los peregrinos.",
+          img: "https://commons.wikimedia.org/wiki/Special:FilePath/Betanzos%20Igrexa%20de%20Santiago%2021.jpg?width=640",
+          credito: "Foto: Miguel Branco, Wikimedia Commons, CC BY-SA 4.0"
+        }
+      ],
+      imprevisto: {
+        titulo: "¡Se rompe la mochila en Betanzos!",
+        texto: "Día 3. Se ha roto el asa de una mochila. Hoy toca la etapa más dura: 24 km hasta Hospital de Bruma.",
+        opciones: [
+          { id: "a", n: "Quedarse un día más en Betanzos para arreglarla", det: "Pagáis una noche y un día de comida más (vuestro gasto diario).", tipo: "anade", extra: "diario", kmPerdidos: 0 },
+          { id: "b", n: "Coger un taxi hasta Hospital de Bruma", det: "El taxi cuesta 40 €. Esos 24 km no los andáis.", tipo: "anade", extra: 40, kmPerdidos: 24 },
+          { id: "c", n: "Comprar una mochila barata y dormir en un albergue a mitad de camino en vez de en Bruma", det: "La mochila cuesta 15 €. Ese albergue cuesta lo mismo que el de Bruma.", tipo: "ambas", extra: 15, kmPerdidos: 0 }
+        ]
+      }
+    },
+    D: {
+      activo: true,
+      camino: "Vía de la Plata (Camino Sanabrés)",
+      inicio: "Ourense",
+      viaje: "Sevilla ↔ Ourense",
+      transporte: [
+        { id: "bus", n: "Autobús", p: 120, d: "el más lento", i: "ti-bus" },
+        { id: "tren", n: "Tren", p: 160, d: "con transbordo", i: "ti-train" },
+        { id: "avion", n: "Avión", p: 200, d: "+ bus hasta Ourense", i: "ti-plane" }
+      ],
+      paradas: [
+        { n: "Ourense", km: 0, lat: 42.336, lon: -7.864, fija: true },
+        { n: "Cea", km: 22, lat: 42.465, lon: -7.989 },
+        { n: "O Castro (Dozón)", km: 41, lat: 42.585, lon: -8.030 },
+        { n: "Silleda", km: 69, lat: 42.696, lon: -8.246 },
+        { n: "Outeiro", km: 93, lat: 42.795, lon: -8.440 },
+        { n: "Santiago", km: 109, lat: 42.880, lon: -8.544 }
+      ],
+      pistaRuta: "Santiago está al norte y un poco al oeste. La parada más cercana a Ourense es Cea.",
+      kmOpciones: ["Unos 109 km", "Unos 1.000 km", "Unos 30 km"],
+      falsoInicio: "Porque allí empieza la Vía de la Plata",
+      totalKm: 109,
+      completo: "La Vía de la Plata empieza en Sevilla, ¡vuestra ciudad! Hasta Santiago son casi 1.000 km. Un peregrino sevillano medieval tardaba muchas semanas andando.",
+      mapaCompleto: {
+        src: "https://commons.wikimedia.org/wiki/Special:FilePath/Caminos%20Santiago%20actuales%20-%2007%20Caminos%20andaluces.svg?width=600",
+        credito: "Mapa: Paulusburg, Wikimedia Commons, CC BY-SA 4.0"
+      },
+      lugares: [
+        {
+          id: "puente", n: "Puente Mayor (Ponte Vella)", lugar: "Ourense", fecha: "Origen romano; reconstruido en el siglo XIII",
+          pista: "Cruza el río Miño. Durante siglos fue el único puente para pasarlo en Ourense.",
+          img: "https://commons.wikimedia.org/wiki/Special:FilePath/Puente%20Medieval%20de%20Orense%20desde%20el%20Paseo%20Fluvial%20del%20Mi%C3%B1o.jpg?width=640",
+          credito: "Foto: Mentxuwiki, Wikimedia Commons, CC BY-SA 4.0"
+        },
+        {
+          id: "hospital", n: "Hospital Real", lugar: "Santiago de Compostela", fecha: "Fundado por los Reyes Católicos en 1499",
+          pista: "Hoy es un hotel (Parador). Antes recibía a peregrinos cansados y enfermos.",
+          img: "https://commons.wikimedia.org/wiki/Special:FilePath/Vista%20de%20la%20fachada%20del%20Hostal%20de%20los%20Reyes%20Cat%C3%B3licos%2C%20en%20la%20Plaza%20del%20Obradoiro.JPG?width=640",
+          credito: "Foto: Lancastermerrin88, Wikimedia Commons, CC BY-SA 4.0"
+        },
+        {
+          id: "iglesia", n: "Catedral de San Martiño", lugar: "Ourense", fecha: "Siglos XII–XIII (consagrada en 1188)",
+          pista: "Es la iglesia más importante de la ciudad. Su pórtico se parece al de la catedral de Santiago.",
+          img: "https://commons.wikimedia.org/wiki/Special:FilePath/Fachada%20Oeste%20Catedral%20de%20Ourense.jpg?width=640",
+          credito: "Foto: CatedralOurense, Wikimedia Commons, CC BY-SA 4.0"
+        }
+      ],
+      imprevisto: {
+        titulo: "¡Tobillo torcido en Silleda!",
+        texto: "Día 4. Uno de vosotros se ha torcido el tobillo. Hoy toca ir a Outeiro (24 km).",
+        opciones: [
+          { id: "a", n: "Descansar un día más en Silleda", det: "Pagáis una noche y un día de comida más (vuestro gasto diario).", tipo: "anade", extra: "diario", kmPerdidos: 0 },
+          { id: "b", n: "Coger el autobús hasta Outeiro", det: "El autobús cuesta 8 €. Esos 24 km no los andáis.", tipo: "anade", extra: 8, kmPerdidos: 24 },
+          { id: "c", n: "Comprar una venda y dormir en Bandeira en vez de en Outeiro", det: "La venda cuesta 9 €. La noche en Bandeira cuesta lo mismo que la de Outeiro.", tipo: "ambas", extra: 9, kmPerdidos: 0 }
+        ]
+      }
+    }
   },
   EJEMPLO: {
     pregunta: "Es agosto. ¿A qué hora salís a caminar?",
