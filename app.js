@@ -18,7 +18,7 @@ const D = window.DS, L = window.LISTAS;
 const Q = new URLSearchParams(location.search);
 const TABS = [
   { id: "brief", t: "0 · Briefing" }, { id: "m1", t: "1 · Ruta" }, { id: "m2", t: "2 · Mochila" },
-  { id: "m3", t: "3 · Dinero" }, { id: "m4", t: "4 · Historia" }, { id: "m5", t: "5 · Imprevisto" },
+  { id: "m3", t: "3 · Dinero" }, { id: "m4", t: "4 · Historia" }, { id: "m5", t: "5 · En ruta" },
   { id: "fin", t: "Llegada" }
 ];
 
@@ -78,7 +78,7 @@ function nuevoPasaporte(grupo, miembros, modelo) {
     m2: { sel: [], pares: {}, frase: "", int: 0, ok: false },
     m3: { tra: null, aloj: null, com: null, d: "", c: "", t: "", r: "", just: "", int: 0, ok: false },
     m4: { f: {}, acog: null, inter: null, frase: "", int: 0, ok: false },
-    m5: { op: null, tipo: null, rest: "", km: "", compo: null, just: "", int: 0, ok: false },
+    m5: { dias: [], imp: null, op: null, tipo: null, rest: "", km: "", compo: null, just: "", int: 0, ok: false },
     ind: {}, creado: Date.now(), upd: Date.now()
   };
 }
@@ -98,12 +98,24 @@ function calc3(st, mod) {
   const d = al.p + co.p, c = d * D.DIAS, t = c + tr.p, r = D.PRESUPUESTO - t;
   return { d, c, t, r };
 }
+function hashN(t) { let h = 2166136261; for (const c of t) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; }
+function imprevistoDe(st, mod) {
+  if (!st.m5.imp) { const h = hashN(equipoId(st.miembros) + st.modelo); st.m5.imp = { dia: 2 + (h % 3), idx: (h >>> 3) % D.IMPREVISTOS.length }; }
+  const { dia, idx } = st.m5.imp, I = D.IMPREVISTOS[idx], de = mod.paradas[dia - 1], a = mod.paradas[dia], km = a.km - de.km;
+  const t = x => x.replace(/\{de\}/g, de.n).replace(/\{a\}/g, a.n);
+  return { dia, de: de.n, a: a.n, km, titulo: I.tit, texto: `Día ${dia}. En ${de.n}, ${t(I.sit)}. Hoy toca ir a ${a.n} (${km} km).`,
+    opciones: [
+      { id: "a", n: `Quedarse un día más en ${de.n}`, det: "Pagáis una noche y un día de comida más (vuestro gasto diario).", tipo: "anade", extra: "diario", kmPerdidos: 0 },
+      { id: "b", n: t(I.b.n), det: `Cuesta ${I.b.p} €. Esos ${km} km no los andáis.`, tipo: "anade", extra: I.b.p, kmPerdidos: km },
+      { id: "c", n: `${I.c.n} y dormir a mitad de etapa en vez de en ${a.n}`, det: `Cuesta ${I.c.p} €. Esa noche cuesta lo mismo que la de ${a.n}.`, tipo: "ambas", extra: I.c.p, kmPerdidos: 0 } ] };
+}
+function gastoDiario(st, hasta) { return (st.m5.dias || []).slice(0, hasta).reduce((s, v, i) => s + (v == null ? 0 : D.DIARIO[i].o[v].c), 0); }
 function extra5(st, mod) {
-  const op = mod.imprevisto.opciones.find(o => o.id === st.m5.op); const k = calc3(st, mod);
+  const im = imprevistoDe(st, mod), op = im.opciones.find(o => o.id === st.m5.op), k = calc3(st, mod);
   if (!op || !k) return null;
-  const extra = op.extra === "diario" ? k.d : op.extra;
+  const extra = op.extra === "diario" ? k.d : op.extra, antes = k.r - gastoDiario(st, im.dia);
   const km = mod.totalKm - op.kmPerdidos;
-  return { op, extra, rest: k.r - extra, km, compo: km >= 100 };
+  return { op, extra, antes, rest: antes - extra, km, compo: km >= 100 };
 }
 function evalua(st) {
   const mod = D.MODELOS[st.modelo]; const ordenOK = mod.paradas.filter(p => !p.fija).map(p => p.n);
@@ -115,7 +127,7 @@ function evalua(st) {
   e.m3 = { calc: !!k && num(st.m3.d) === k.d && num(st.m3.c) === k.c && num(st.m3.t) === k.t && num(st.m3.r) === k.r, reserva: !!k && k.r >= D.RESERVA, just: conPorque(st.m3.just) };
   e.m4 = { funcOk: mod.lugares.filter(l => st.m4.f[l.id] === l.id).length, acog: st.m4.acog === 0, inter: st.m4.inter === 0, frase: (st.m4.frase || "").trim().length >= 15 };
   const x = extra5(st, mod);
-  e.m5 = { tipo: !!x && st.m5.tipo === x.op.tipo, rest: !!x && num(st.m5.rest) === x.rest, km: !!x && num(st.m5.km) === x.km, compo: !!x && st.m5.compo === (x.compo ? 0 : 1), alcanza: !!x && x.rest >= 0, just: conPorque(st.m5.just) };
+  e.m5 = { dias: (st.m5.dias || []).filter(v => v != null).length === 5, tipo: !!x && st.m5.tipo === x.op.tipo, rest: !!x && num(st.m5.rest) === x.rest, km: !!x && num(st.m5.km) === x.km, compo: !!x && st.m5.compo === (x.compo ? 0 : 1), alcanza: !!x && x.rest >= 0, just: conPorque(st.m5.just) };
   return e;
 }
 function discreto(f) { return f >= 0.9 ? 10 : f >= 0.7 ? 7 : f >= 0.5 ? 5 : 2; }
@@ -131,15 +143,23 @@ function propuesta(st, nombre) {
 
 /* ---------- cabecera ---------- */
 function sellos() { return S ? ["m1", "m2", "m3", "m4", "m5"].filter(m => S[m].ok).length : 0; }
+const ORDEN = ["brief", "m1", "m2", "m3", "m4", "m5", "fin"];
+function puedeIr(id) {
+  if (id === "brief") return true; if (!S) return false;
+  const i = ORDEN.indexOf(id); if (i <= 1) return true;
+  return ORDEN.slice(1, i).every(m => S[m] && S[m].ok);
+}
+function aviso(id) { const i = ORDEN.indexOf(id), falta = ORDEN.slice(1, i).find(m => !(S && S[m] && S[m].ok)); return falta ? `Primero conseguid el sello de ${TABS.find(t => t.id === falta).t}.` : ""; }
 function pintaCab() {
   const c = $("#cab");
   if (profe) { c.innerHTML = `<span class="marca"><i class="ti ti-shield-check"></i> Panel del profesor · Destino Santiago</span><button class="tab panel" id="salirProfe">Salir del panel</button>`; $("#salirProfe").onclick = () => { profe = false; render(); }; return; }
   c.innerHTML = `<span class="marca"><i class="ti ti-route"></i> 2.º ESO · Destino Santiago</span>` +
     (S ? `<span class="sellos">Sellos: ${sellos()}/5</span>` : "") +
-    TABS.map(t => `<button class="tab ${t.id === tab ? "on" : ""} ${S && S[t.id] && S[t.id].ok ? "hecha" : ""}" data-t="${t.id}">${t.t}</button>`).join("") +
+    TABS.map(t => `<button class="tab ${t.id === tab ? "on" : ""} ${S && S[t.id] && S[t.id].ok ? "hecha" : ""}" data-t="${t.id}" style="${puedeIr(t.id) ? "" : "opacity:.45"}">${puedeIr(t.id) ? "" : '<i class="ti ti-lock"></i> '}${t.t}</button>`).join("") +
     `<button class="tab panel" id="irProfe" title="Panel del profesor"><i class="ti ti-lock"></i></button>`;
   c.querySelectorAll("[data-t]").forEach(b => b.onclick = () => {
     if (b.dataset.t !== "brief" && !S) { tab = "brief"; render(); const e = $("#errLogin"); if (e) e.textContent = "Primero elegid grupo y nombres y pulsad «Empezar»."; return; }
+    if (!puedeIr(b.dataset.t)) { avisoFlotante(aviso(b.dataset.t)); return; }
     tab = b.dataset.t; render(); scrollTo(0, 0);
   });
   $("#irProfe").onclick = () => {
@@ -148,6 +168,7 @@ function pintaCab() {
     const entrar = () => { if ($("#pw").value === PASS_PROFE) { profe = true; render(); } else $("#errPw").textContent = "Contraseña incorrecta."; };
     $("#okPw").onclick = entrar; $("#pw").onkeydown = e => { if (e.key === "Enter") entrar(); }; $("#noPw").onclick = () => render(); $("#pw").focus();
   };
+  document.querySelectorAll("#app [data-ir]").forEach(b => { const ok = puedeIr(b.dataset.ir); b.style.opacity = ok ? "" : ".45"; const l = b.querySelector(".ti-lock"); if (ok && l) l.remove(); });
 }
 
 /* ---------- pantallas ---------- */
@@ -159,14 +180,17 @@ function render() {
 }
 function cabecera(titulo, sub) { return `<h1>${titulo}</h1><p class="sub">${sub}</p>`; }
 function credencial() {
-  const nombres = ["Ruta", "Mochila", "Dinero", "Historia", "Imprevisto"];
+  const nombres = ["Ruta", "Mochila", "Dinero", "Historia", "En ruta"];
   return `<div class="cred">${["m1", "m2", "m3", "m4", "m5"].map((m, i) => `<div class="sello ${S && S[m].ok ? "on" : ""}">${S && S[m].ok ? "✓<br>" + nombres[i] : i + 1}</div>`).join("")}</div>`;
 }
 function siguiente(id) {
   const i = TABS.findIndex(t => t.id === id); const n = TABS[i + 1];
-  return n ? `<button class="btn sec" data-ir="${n.id}">Ir a ${n.t} <i class="ti ti-arrow-right"></i></button>` : "";
+  if (!n) return "";
+  const ok = puedeIr(n.id);
+  return `<button class="btn sec" data-ir="${n.id}" style="${ok ? "" : "opacity:.45"}">${ok ? "" : '<i class="ti ti-lock"></i> '}Ir a ${n.t} <i class="ti ti-arrow-right"></i></button>`;
 }
-function enlazarIr(a) { a.querySelectorAll("[data-ir]").forEach(b => b.onclick = () => { tab = b.dataset.ir; render(); scrollTo(0, 0); }); }
+function enlazarIr(a) { a.querySelectorAll("[data-ir]").forEach(b => b.onclick = () => { if (!puedeIr(b.dataset.ir)) { avisoFlotante(aviso(b.dataset.ir)); return; } tab = b.dataset.ir; render(); scrollTo(0, 0); }); }
+function avisoFlotante(t) { let d = $("#avisoF"); if (!d) { d = document.createElement("div"); d.id = "avisoF"; d.style.cssText = "position:sticky;top:60px;z-index:6;max-width:900px;margin:8px auto;background:#fdecea;color:#b3261e;border:2px solid #b3261e;padding:10px 14px;font-weight:700"; document.body.insertBefore(d, $("#app")); } d.innerHTML = '<i class="ti ti-lock"></i> ' + esc(t); clearTimeout(d._t); d._t = setTimeout(() => d.remove(), 3500); }
 function fb(ok, txt) { return `<div class="fb ${ok ? "ok" : "mal"}">${txt}</div>`; }
 
 /* ----- 0 · Briefing ----- */
@@ -412,30 +436,40 @@ function pM4(a) {
   };
 }
 
-/* ----- 5 · Imprevisto ----- */
+/* ----- 5 · En ruta ----- */
 function pM5(a) {
-  const m = M(), st = S.m5, im = m.imprevisto, k = calc3(S, m);
-  if (!S.m3.ok) { a.innerHTML = cabecera("Misión 5 · Resuelve un imprevisto", "") + fb(false, "Primero terminad la Misión 3 (Dinero): necesitáis saber cuánto dinero os queda.") + `<div class="fila"><button class="btn" data-ir="m3">Ir a la Misión 3</button></div>`; enlazarIr(a); return; }
+  const m = M(), st = S.m5, k = calc3(S, m);
+  if (!k || !S.m3.ok) { a.innerHTML = cabecera("Misión 5 · En ruta", "") + fb(false, "Primero terminad la Misión 3 (Dinero)."); return; }
+  const im = imprevistoDe(S, m);
+  st.dias = st.dias || [];
   const tipos = [["anade", "Se añade a lo que ya teníamos previsto"], ["sustituye", "Sustituye a un gasto que ya teníamos"], ["ambas", "Una parte se añade y otra sustituye"]];
-  a.innerHTML = cabecera("Misión 5 · Resuelve un imprevisto", `Tarjeta ${S.modelo} · situación inventada.`) +
-    `<div class="reto"><b><i class="ti ti-alert-triangle"></i> ${im.titulo}</b><br>${im.texto}</div>
-    <div class="instr">Elegid una solución, actualizad vuestro dinero y explicad la decisión. Ahora os quedan <b>${k.r} €</b>.</div>
-    <div class="g3">${im.opciones.map(o => `<button class="op ${st.op === o.id ? "sel" : ""}" data-op="${o.id}"><b>${o.n}</b><small>${o.det}</small></button>`).join("")}</div>
-    
-    <table class="tabla" style="margin-top:14px">
-      <tr><td>El gasto nuevo…</td><td><select id="t5"><option value="">Elige</option>${tipos.map(([v, t]) => `<option value="${v}" ${st.tipo === v ? "selected" : ""}>${t}</option>`).join("")}</select></td></tr>
-      <tr><td>Nuevo dinero restante (€)</td><td><input type="number" id="r5" value="${esc(st.rest)}"></td></tr>
-      <tr><td>Km que andaréis en total</td><td><input type="number" id="k5" value="${esc(st.km)}"></td></tr>
-      <tr><td>¿Conseguiréis la Compostela?</td><td><select id="c5"><option value="">Elige</option><option value="0" ${st.compo === 0 ? "selected" : ""}>Sí</option><option value="1" ${st.compo === 1 ? "selected" : ""}>No</option></select></td></tr>
-    </table>
-    <label class="et" style="margin-top:14px">Justificad</label>
-    <input type="text" id="j5" value="${esc(st.just)}" placeholder="Elegimos… porque…">
-    <div id="res5">${st.ok ? fb(true, "¡Sello del Imprevisto conseguido!") : ""}</div><p class="err" id="err5"></p>
-    <div class="fila"><button class="btn" id="comp5"><i class="ti ti-check"></i> Comprobar</button>${siguiente("m5")}<span id="guardado" class="guardado"></span></div>`;
+  const resuelto = !!st.ok, hasta = st.dias.findIndex(v => v == null), diaActual = hasta === -1 ? Math.min(st.dias.length, 5) : hasta;
+  const saldo = k.r - gastoDiario(S, 5) - (st.impOk ? extra5(S, m).extra : 0);
+  let html = "";
+  for (let i = 0; i < 5; i++) {
+    const de = m.paradas[i].n, aa = m.paradas[i + 1].n, c = D.DIARIO[i], v = st.dias[i];
+    const bloqueadoPorImp = i + 1 > im.dia && !st.impOk;
+    if (i > 0 && st.dias[i - 1] == null) break;
+    if (bloqueadoPorImp) break;
+    html += `<div class="caja"><b>Día ${i + 1} · ${esc(de)} → ${esc(aa)}</b><p style="margin:6px 0">${c.t.replace(/\{de\}/g, de).replace(/\{a\}/g, aa)}</p>
+      <div class="g2">${c.o.map((o, j) => `<button class="op ${v === j ? "sel" : ""}" data-dia="${i}" data-v="${j}" ${v != null ? "disabled" : ""}><b>${o.n}</b><small>${o.c ? o.c + " € más" : "0 €"}</small></button>`).join("")}</div>
+      ${v != null ? `<div class="fb ${i === 2 && v === 1 ? "mal" : "ok"}" style="margin-bottom:0">${c.o[v].r}</div>` : ""}</div>`;
+    if (i + 1 === im.dia && v != null) html += bloqueImp(im, k);
+    if (v == null) break;
+  }
+  a.innerHTML = cabecera("Misión 5 · En ruta", `${m.camino}. Situaciones inventadas.`) +
+    `<div class="instr">Avanzad día a día. En cada día elegid qué hacéis. Algún día os pasará un imprevisto: tendréis que resolverlo para seguir.</div>
+    <div class="g3" style="margin-bottom:6px"><div class="caja" style="margin:0"><span class="mini">Os quedaban tras la misión 3</span><br><b style="font-size:22px">${k.r} €</b></div>
+    <div class="caja" style="margin:0"><span class="mini">Gastado en el camino</span><br><b style="font-size:22px">${gastoDiario(S, 5) + (st.impOk ? extra5(S, m).extra : 0)} €</b></div>
+    <div class="caja" style="margin:0;border-color:${saldo < 0 ? "var(--mal)" : "var(--linea)"}"><span class="mini">Os queda ahora</span><br><b style="font-size:22px">${saldo} €</b></div></div>
+    ${html}
+    ${st.ok && st.dias.filter(v => v != null).length === 5 ? fb(true, `¡Sello En ruta conseguido! Llegáis a Santiago con ${saldo} €.`) + `<div class="fila">${siguiente("m5")}</div>` : ""}`;
   enlazarIr(a);
-  a.querySelectorAll("[data-op]").forEach(b => b.onclick = () => { st.op = b.dataset.op; st.ok = false; guardar(); pM5(a); });
+  a.querySelectorAll("[data-dia]").forEach(b => b.onclick = () => { const i = +b.dataset.dia; st.dias[i] = +b.dataset.v; comprobarFinM5(); guardar(true); pM5(a); });
+  const r5 = $("#r5"); if (!r5) return;
+  a.querySelectorAll("[data-op]").forEach(b => b.onclick = () => { st.op = b.dataset.op; guardar(); pM5(a); });
   $("#t5").onchange = e => { st.tipo = e.target.value; guardar(); };
-  $("#r5").oninput = e => { st.rest = e.target.value; $("#err5").textContent = ""; guardar(); };
+  r5.oninput = e => { st.rest = e.target.value; $("#err5").textContent = ""; guardar(); };
   $("#k5").oninput = e => { st.km = e.target.value; $("#err5").textContent = ""; guardar(); };
   $("#c5").onchange = e => { st.compo = e.target.value === "" ? null : +e.target.value; guardar(); };
   $("#j5").oninput = e => { st.just = e.target.value; $("#err5").textContent = ""; guardar(); };
@@ -445,13 +479,34 @@ function pM5(a) {
     if (!conPorque(st.just) || /…/.test(st.just)) { $("#err5").textContent = "Escribid una frase completa con «porque» (sin dejar «…»)."; return; }
     st.int++; const x = extra5(S, m), e = evalua(S).m5, f = [];
     if (!e.tipo) f.push("Releed la solución: ¿pagáis algo nuevo, cambiáis un gasto por otro o las dos cosas?");
-    if (!e.rest) f.push(`Dinero: a lo que os quedaba (${k.r} €) restadle lo que cuesta la solución.`);
+    if (!e.rest) f.push(`Dinero: a lo que os quedaba antes del imprevisto (${x.antes} €) restadle lo que cuesta la solución.`);
     if (!e.km) f.push(`Km: vuestro tramo tiene ${m.totalKm} km. ¿Perdéis alguno con esta solución?`);
     if (!e.compo) f.push("Compostela: recordad que hay que andar al menos 100 km.");
     if (!f.length && !e.alcanza) f.push("No os llega el dinero con esta solución. Elegid otra.");
-    st.ok = !f.length; guardar(true); pintaCab();
-    $("#res5").innerHTML = st.ok ? fb(true, `¡Sello del Imprevisto conseguido! Os quedan ${x.rest} € y andaréis ${x.km} km.${x.compo ? "" : " Llegaréis a Santiago, pero sin Compostela."}`) : fb(false, f.join("<br>"));
+    st.impOk = !f.length; comprobarFinM5(); guardar(true);
+    if (f.length) { $("#res5").innerHTML = fb(false, f.join("<br>")); return; }
+    pM5(a); pintaCab();
   };
+}
+function comprobarFinM5() { const st = S.m5; st.ok = !!st.impOk && (st.dias || []).filter(v => v != null).length === 5; if (st.impOk && !st.ok) st.ok = false; pintaCab(); }
+function bloqueImp(im, k) {
+  const st = S.m5, x = st.impOk ? extra5(S, M()) : null;
+  const tipos = [["anade", "Se añade a lo que ya teníamos previsto"], ["sustituye", "Sustituye a un gasto que ya teníamos"], ["ambas", "Una parte se añade y otra sustituye"]];
+  const antes = k.r - gastoDiario(S, im.dia);
+  if (st.impOk) return `<div class="caja" style="border-color:var(--rojo)"><b><i class="ti ti-alert-triangle"></i> ${im.titulo}</b><p style="margin:6px 0">${im.texto}</p>${fb(true, `Resuelto: os quedan ${x.rest} € y andaréis ${x.km} km.${x.compo ? "" : " Llegaréis a Santiago, pero sin Compostela."}`)}</div>`;
+  return `<div class="caja" style="border:3px solid var(--rojo)"><div class="reto" style="margin-top:0"><b><i class="ti ti-alert-triangle"></i> ${im.titulo}</b><br>${im.texto}</div>
+    <p>Antes del imprevisto os quedan <b>${antes} €</b>. Elegid una solución, actualizad el dinero y explicad la decisión.</p>
+    <div class="g3">${im.opciones.map(o => `<button class="op ${st.op === o.id ? "sel" : ""}" data-op="${o.id}"><b>${o.n}</b><small>${o.det}</small></button>`).join("")}</div>
+    <table class="tabla" style="margin-top:14px">
+      <tr><td>El gasto nuevo…</td><td><select id="t5"><option value="">Elige</option>${tipos.map(([v, t]) => `<option value="${v}" ${st.tipo === v ? "selected" : ""}>${t}</option>`).join("")}</select></td></tr>
+      <tr><td>Nuevo dinero restante (€)</td><td><input type="number" id="r5" value="${esc(st.rest)}"></td></tr>
+      <tr><td>Km que andaréis en total</td><td><input type="number" id="k5" value="${esc(st.km)}"></td></tr>
+      <tr><td>¿Conseguiréis la Compostela?</td><td><select id="c5"><option value="">Elige</option><option value="0" ${st.compo === 0 ? "selected" : ""}>Sí</option><option value="1" ${st.compo === 1 ? "selected" : ""}>No</option></select></td></tr>
+    </table>
+    <label class="et" style="margin-top:14px">Justificad</label>
+    <input type="text" id="j5" value="${esc(st.just)}" placeholder="Elegimos… porque…">
+    <div id="res5"></div><p class="err" id="err5"></p>
+    <div class="fila"><button class="btn" id="comp5"><i class="ti ti-check"></i> Comprobar</button></div></div>`;
 }
 
 /* ----- Llegada (individual) ----- */

@@ -269,6 +269,36 @@ window.DS = {
       }
     }
   },
+  // Situaciones de cada jornada (de hoy, ficticias). {de} y {a} = salida y llegada del día.
+  DIARIO: [
+    { t: "Al llegar a {a}, el albergue público está completo.", o: [
+      { n: "Andar 3 km más hasta el siguiente albergue", c: 0, r: "Llegáis agotados, pero no gastáis nada más." },
+      { n: "Dormir esta noche en una pensión", c: 8, r: "Pagáis 8 € más de lo previsto, pero descansáis." } ] },
+    { t: "En {a} hay fiesta del pueblo con pulpo y música.", o: [
+      { n: "Probar el pulpo", c: 6, r: "Gastáis 6 € y conocéis a gente del pueblo." },
+      { n: "Cenar lo que teníais previsto", c: 0, r: "No gastáis nada más." } ] },
+    { t: "Al salir de {de} os dais cuenta de que ayer no sellasteis la credencial.", o: [
+      { n: "Volver a sellarla antes de seguir", c: 0, r: "Perdéis media hora, pero la credencial está en regla." },
+      { n: "Seguir sin el sello", c: 0, r: "Cuidado: en los últimos 100 km hacen falta 2 sellos al día. Os podrían negar la Compostela." } ] },
+    { t: "Camino de {a}, una peregrina de Corea del Sur no encuentra el albergue y no habla español.", o: [
+      { n: "Acompañarla hasta el albergue", c: 0, r: "Os enseña a decir «gracias» en coreano: gamsahamnida." },
+      { n: "Indicarle el camino y seguir", c: 0, r: "Os da las gracias con una sonrisa y sigue sola." } ] },
+    { t: "Último día: llueve sin parar camino de {a}.", o: [
+      { n: "Comprar calcetines secos", c: 3, r: "Gastáis 3 € y llegáis con los pies secos." },
+      { n: "Seguir así", c: 0, r: "Llegáis empapados, pero contentos." } ] }
+  ],
+  // Banco de imprevistos: a cada pareja le toca uno al azar, en el día 2, 3 o 4.
+  // b = transporte que se salta la etapa del día; c = compra + dormir en otro sitio (mismo precio).
+  IMPREVISTOS: [
+    { tit: "¡Ampollas!", sit: "a uno de vosotros le han salido ampollas", b: { n: "Coger un taxi hasta {a}", p: 35 }, c: { n: "Comprar apósitos", p: 6 } },
+    { tit: "¡Tormenta!", sit: "llueve a cántaros y vuestras botas están empapadas", b: { n: "Coger el autobús hasta {a}", p: 10 }, c: { n: "Comprar un poncho", p: 12 } },
+    { tit: "¡Mochila rota!", sit: "se ha roto el asa de una mochila", b: { n: "Coger un taxi hasta {a}", p: 40 }, c: { n: "Comprar una mochila barata", p: 15 } },
+    { tit: "¡Tobillo torcido!", sit: "uno de vosotros se ha torcido el tobillo", b: { n: "Coger el autobús hasta {a}", p: 8 }, c: { n: "Comprar una venda", p: 9 } },
+    { tit: "¡Botas rotas!", sit: "a una bota se le ha despegado la suela", b: { n: "Coger un taxi hasta {a}", p: 35 }, c: { n: "Comprar unas zapatillas", p: 25 } },
+    { tit: "¡Ola de calor!", sit: "anuncian 38 °C para hoy", b: { n: "Coger el autobús hasta {a}", p: 9 }, c: { n: "Comprar gorras y agua", p: 7 } },
+    { tit: "¡Rodilla cargada!", sit: "a uno de vosotros le duele la rodilla al bajar cuestas", b: { n: "Coger un taxi hasta {a}", p: 30 }, c: { n: "Comprar una rodillera", p: 10 } },
+    { tit: "¡Albergues llenos!", sit: "un grupo enorme ha reservado las camas de los albergues del camino de hoy", b: { n: "Coger el autobús hasta {a}, donde aún queda sitio", p: 7 }, c: { n: "Llamar para reservar cama", p: 3 } }
+  ],
   EJEMPLO: {
     pregunta: "Es agosto. ¿A qué hora salís a caminar?",
     opciones: ["A las 6:30", "A las 12:00", "A las 16:00"],
