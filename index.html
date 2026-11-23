@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<title>Destino Santiago · 2.º ESO GeH</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+:root{--rojo:#C8102E;--rojo-o:#9E0C24;--tinta:#111;--gris:#555;--linea:#222;--suave:#f4f4f4;--ok:#1b7f3b;--ok-bg:#e7f6ec;--mal:#b3261e;--mal-bg:#fdecea;--aviso-bg:#fff4d6;--azul:#1f5fbf;--azul-bg:#eaf1fc}
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Helvetica,sans-serif;color:var(--tinta);background:#fff;font-size:17px;line-height:1.5}
+header{position:sticky;top:0;z-index:5;background:#fff;border-bottom:4px solid var(--rojo);display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:8px 12px}
+header .marca{font-weight:700;font-size:16px;margin-right:auto;display:flex;align-items:center;gap:8px}
+header .sellos{font-size:13px;color:var(--gris);margin-right:8px}
+.tab{border:1.5px solid var(--linea);background:#fff;padding:6px 10px;font-size:13px;font-weight:700;cursor:pointer;border-radius:3px}
+.tab.on{background:var(--rojo);border-color:var(--rojo);color:#fff}
+.tab.hecha{border-color:var(--ok);color:var(--ok)}
+.tab.on.hecha{color:#fff}
+.tab.panel{background:#111;color:#fff;border-color:#111}
+main{max-width:900px;margin:0 auto;padding:18px 16px 60px}
+h1{font-size:30px;line-height:1.15;margin:6px 0 4px;text-transform:uppercase;letter-spacing:.5px}
+h2{font-size:20px;margin:22px 0 8px}
+.sub{color:var(--gris);margin:0 0 16px;font-size:15px}
+.caja{border:2px solid var(--linea);padding:14px;margin:14px 0;background:#fff}
+.reto{border-left:6px solid var(--rojo);background:var(--suave);padding:12px 14px;margin:14px 0;font-size:18px}
+.instr{background:var(--azul-bg);border-left:6px solid var(--azul);padding:10px 14px;margin:12px 0;font-size:16px}
+.pista{background:var(--aviso-bg);border:1px dashed #b88a00;padding:8px 12px;margin:8px 0;font-size:15px}
+label.et{display:block;font-weight:700;font-size:13px;text-transform:uppercase;margin:0 0 4px}
+select,input[type=text],input[type=number],textarea{width:100%;font-size:17px;padding:10px;border:2px solid var(--linea);border-radius:0;background:#fff;font-family:inherit}
+textarea{min-height:70px}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media(max-width:640px){.g2,.g3,.g4{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}h1{font-size:24px}}
+.op{border:2px solid var(--linea);background:#fff;padding:12px;cursor:pointer;text-align:left;font-family:inherit;font-size:16px;width:100%;color:var(--tinta)}
+.op:hover{background:var(--suave)}
+.op.sel{border:3px solid var(--rojo);background:#fff3f4}
+.op .ti{font-size:34px;display:block;margin-bottom:4px}
+.op b{display:block;font-size:17px}
+.op small{color:var(--gris);font-size:14px}
+.btn{background:var(--rojo);color:#fff;border:0;padding:12px 18px;font-size:17px;font-weight:700;cursor:pointer;font-family:inherit}
+.btn:hover{background:var(--rojo-o)}
+.btn.sec{background:#fff;color:var(--tinta);border:2px solid var(--linea)}
+.fila{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+.fb{padding:10px 14px;margin:12px 0;font-size:16px}
+.fb.ok{background:var(--ok-bg);color:var(--ok);border:2px solid var(--ok)}
+.fb.mal{background:var(--mal-bg);color:var(--mal);border:2px solid var(--mal)}
+.err{color:var(--mal);font-size:14px;margin:6px 0 0;font-weight:700}
+.cred{display:flex;gap:10px;flex-wrap:wrap}
+.sello{width:58px;height:58px;border-radius:50%;border:3px dashed #999;display:flex;align-items:center;justify-content:center;font-weight:700;color:#999;font-size:13px;text-align:center;line-height:1.1}
+.sello.on{border:3px solid var(--rojo);color:var(--rojo);transform:rotate(-12deg);background:#fff3f4}
+.tabla{width:100%;border-collapse:collapse;font-size:15px}
+.tabla td,.tabla th{border:1.5px solid var(--linea);padding:8px;text-align:left;vertical-align:middle}
+.tabla th{background:var(--suave)}
+.foto{width:100%;aspect-ratio:4/3;object-fit:cover;border:2px solid var(--linea);background:var(--suave);display:block}
+.credito{font-size:11px;color:var(--gris);margin:2px 0 6px}
+.banner{background:#111;color:#fff;font-size:13px;padding:6px 12px;text-align:center}
+.oculto{display:none!important}
+.chip{display:inline-block;border:1.5px solid var(--linea);padding:4px 10px;margin:4px 6px 4px 0;font-size:15px;background:#fff;cursor:pointer}
+.chip.usado{opacity:.35;cursor:default}
+.mini{font-size:13px;color:var(--gris)}
+.guardado{font-size:12px;color:var(--ok);margin-left:6px}
+.nota{font-weight:700}
+.panelt td,.panelt th{font-size:13px;padding:5px}
+details summary{cursor:pointer;font-weight:700}
+</style>
+</head>
+<body>
+<div id="banner" class="banner oculto"></div>
+<header id="cab"></header>
+<main id="app"><p>Cargando…</p></main>
+<script src="datos.js"></script>
+<script src="listas.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
