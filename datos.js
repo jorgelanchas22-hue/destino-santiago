@@ -51,13 +51,16 @@ window.DS = {
       ],
       // x,y en el mapa esquemático (oeste a la izquierda)
       paradas: [
-        { n: "Sarria", km: 0, x: 600, y: 220, fija: true },
-        { n: "Portomarín", km: 22, x: 495, y: 192 },
-        { n: "Palas de Rei", km: 47, x: 371, y: 136 },
-        { n: "Arzúa", km: 76, x: 228, y: 80 },
-        { n: "O Pedrouzo", km: 95, x: 129, y: 108 },
-        { n: "Santiago", km: 115, x: 40, y: 127 }
+        { n: "Sarria", km: 0, lat: 42.781, lon: -7.414, fija: true },
+        { n: "Portomarín", km: 22, lat: 42.807, lon: -7.616 },
+        { n: "Palas de Rei", km: 47, lat: 42.873, lon: -7.869 },
+        { n: "Arzúa", km: 76, lat: 42.927, lon: -8.163 },
+        { n: "O Pedrouzo", km: 95, lat: 42.905, lon: -8.360 },
+        { n: "Santiago", km: 115, lat: 42.880, lon: -8.544 }
       ],
+      pistaRuta: "Santiago está al oeste. La parada más cercana a Sarria es Portomarín.",
+      kmOpciones: ["Unos 115 km", "Unos 780 km", "Unos 30 km"],
+      falsoInicio: "Porque allí empieza el Camino Francés",
       totalKm: 115,
       completo: "El Camino Francés completo mide unos 780 km desde Saint-Jean-Pied-de-Port (Francia). Se tarda entre 30 y 40 días.",
       mapaCompleto: {
@@ -94,7 +97,63 @@ window.DS = {
         ]
       }
     },
-    B: { activo: false, camino: "Camino Portugués", inicio: "Tui" },
+    B: {
+      activo: true,
+      camino: "Camino Portugués",
+      inicio: "Tui",
+      viaje: "Sevilla ↔ Tui",
+      transporte: [
+        { id: "bus", n: "Autobús", p: 120, d: "el más lento", i: "ti-bus" },
+        { id: "tren", n: "Tren", p: 160, d: "con transbordo", i: "ti-train" },
+        { id: "avion", n: "Avión", p: 200, d: "+ bus hasta Tui", i: "ti-plane" }
+      ],
+      paradas: [
+        { n: "Tui", km: 0, lat: 42.047, lon: -8.645, fija: true },
+        { n: "Redondela", km: 32, lat: 42.283, lon: -8.609 },
+        { n: "Pontevedra", km: 51, lat: 42.431, lon: -8.645 },
+        { n: "Caldas de Reis", km: 72, lat: 42.604, lon: -8.642 },
+        { n: "Padrón", km: 91, lat: 42.738, lon: -8.660 },
+        { n: "Santiago", km: 115, lat: 42.880, lon: -8.544 }
+      ],
+      pistaRuta: "Santiago está al norte. La parada más cercana a Tui es Redondela.",
+      kmOpciones: ["Unos 115 km", "Unos 620 km", "Unos 30 km"],
+      falsoInicio: "Porque allí empieza el Camino Portugués",
+      totalKm: 115,
+      completo: "El Camino Portugués completo sale de Lisboa y mide unos 620 km. Se tarda casi un mes.",
+      mapaCompleto: {
+        src: "https://commons.wikimedia.org/wiki/Special:FilePath/Caminos%20Santiago%20actuales%20Portugal.svg?width=600",
+        credito: "Mapa: Paulusburg, Wikimedia Commons, CC BY-SA 4.0"
+      },
+      lugares: [
+        {
+          id: "puente", n: "Puente de Ponte Sampaio", lugar: "Pontevedra", fecha: "Origen medieval; tiene 10 arcos",
+          pista: "Cruza el río Verdugo. En 1809 hubo aquí una batalla contra el ejército de Napoleón.",
+          img: "https://commons.wikimedia.org/wiki/Special:FilePath/Ponte%20Sampaio.jpg?width=640",
+          credito: "Foto: Adrián Estévez, Wikimedia Commons, CC BY-SA 4.0"
+        },
+        {
+          id: "hospital", n: "Hospital de Pobres y Peregrinos", lugar: "Tui", fecha: "Edificio de 1756 (hoy Museo Diocesano)",
+          pista: "Su nombre lo dice todo. Los peregrinos podían dormir aquí tres noches.",
+          img: "https://commons.wikimedia.org/wiki/Special:FilePath/Tui%2C%20Museo%20Diocesán.jpg?width=640",
+          credito: "Foto: HombreDHojalata, Wikimedia Commons, CC BY-SA 3.0"
+        },
+        {
+          id: "iglesia", n: "Catedral de Santa María", lugar: "Tui", fecha: "Empezó a construirse en 1120",
+          pista: "Mira sus torres con almenas: parece un castillo junto a la frontera con Portugal.",
+          img: "https://commons.wikimedia.org/wiki/Special:FilePath/Catedral%20de%20Tui%202017.jpg?width=640",
+          credito: "Foto: Roi González Villa, Wikimedia Commons, CC BY-SA 4.0"
+        }
+      ],
+      imprevisto: {
+        titulo: "¡Tormenta en Redondela!",
+        texto: "Día 2. Llueve a cántaros. Mañana toca ir a Pontevedra (20 km) y vuestras botas están empapadas.",
+        opciones: [
+          { id: "a", n: "Quedarse un día más en Redondela hasta que pare", det: "Pagáis una noche y un día de comida más (vuestro gasto diario).", tipo: "anade", extra: "diario", kmPerdidos: 0 },
+          { id: "b", n: "Coger el autobús hasta Pontevedra", det: "El autobús cuesta 10 €. Esos 20 km no los andáis.", tipo: "anade", extra: 10, kmPerdidos: 20 },
+          { id: "c", n: "Comprar un poncho y dormir en Arcade en vez de en Pontevedra", det: "El poncho cuesta 12 €. La noche en Arcade cuesta lo mismo que la de Pontevedra.", tipo: "ambas", extra: 12, kmPerdidos: 0 }
+        ]
+      }
+    },
     C: { activo: false, camino: "Camino Inglés", inicio: "Ferrol" },
     D: { activo: false, camino: "Vía de la Plata", inicio: "Ourense" }
   },
@@ -106,7 +165,7 @@ window.DS = {
     explica: "Elegimos las 6:30 porque así andamos con fresco y llegamos antes del calor. Fíjate: usamos la pista para descartar las otras dos."
   },
   CIERRE: {
-    q1: { t: "Un peregrino llega enfermo a Santiago en el año 1520. ¿Adónde va a que lo cuiden?", o: ["Al Hospital Real", "Al puente de Furelos", "A la Oficina de turismo"], ok: 0 },
+    q1: { t: "Año 1300. Un peregrino llega enfermo y sin dinero a una ciudad del Camino. ¿Dónde lo acogen?", o: ["En un hospital de peregrinos", "En el puente del pueblo", "En un hotel, pagando con tarjeta"], ok: 0 },
     q2: { t: "¿Por qué en el Camino se mezclaban culturas?", o: ["Porque se cruzaban peregrinos de muchos países con sus ideas, lenguas y productos", "Porque todos los peregrinos eran de Galicia", "Porque estaba prohibido hablar con otros peregrinos"], ok: 0, frase: "Pon un ejemplo con tus palabras:" },
     q3: { t: "¿Qué decisión de vuestro viaje defiendes?", o: ["El transporte desde Sevilla", "El alojamiento", "La comida", "La solución al imprevisto"], frase: "La defiendo porque…" }
   }

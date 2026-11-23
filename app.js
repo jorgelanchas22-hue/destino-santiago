@@ -30,6 +30,8 @@ const corto = n => { const p = String(n).split(","); return p.length > 1 ? p[1].
 const slug = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z0-9]+/g, "_").replace(/^_|_$/g, "");
 const equipoId = m => [...m].sort().map(slug).join("__");
 const conPorque = s => /porque/i.test(s || "") && (s || "").trim().length >= 15;
+const ORDENES = { kmA: [2, 0, 1], kmB: [1, 2, 0], kmC: [0, 2, 1], kmD: [2, 1, 0], cienA: [0, 2, 1], cienB: [2, 1, 0], cienC: [1, 0, 2], cienD: [1, 2, 0], acog: [1, 2, 0], inter: [0, 1, 2], q1: [2, 0, 1], q2: [1, 2, 0], ejemplo: [1, 2, 0] };
+const mezcla = (n, clave) => (ORDENES[clave] && ORDENES[clave].length === n) ? ORDENES[clave] : [...Array(n).keys()];
 const num = v => (v === "" || v == null || isNaN(+v)) ? null : +v;
 
 /* ---------- almacenamiento ---------- */
@@ -235,7 +237,7 @@ async function pBrief(a) {
 function pintaEjemplo(c) {
   const E = D.EJEMPLO;
   c.innerHTML = `<p style="margin-top:0"><b>${E.pregunta}</b></p><div class="pista">${E.pista}</div>
-    <div class="g3">${E.opciones.map((o, i) => `<button class="op" data-e="${i}"><b>${o}</b></button>`).join("")}</div><div id="ejr"></div>`;
+    <div class="g3">${mezcla(3, "ejemplo").map(i => `<button class="op" data-e="${i}"><b>${E.opciones[i]}</b></button>`).join("")}</div><div id="ejr"></div>`;
   c.querySelectorAll("[data-e]").forEach(b => b.onclick = () => {
     c.querySelectorAll("[data-e]").forEach(x => x.classList.remove("sel")); b.classList.add("sel");
     const ok = +b.dataset.e === E.ok;
@@ -244,35 +246,45 @@ function pintaEjemplo(c) {
 }
 
 /* ----- 1 · Ruta ----- */
-function pM1(a) {
-  const m = M(), st = S.m1, libres = m.paradas.filter(p => !p.fija), e = evalua(S).m1;
-  const slots = libres.map((p, i) => ({ ...p, puesto: st.orden[i] }));
-  const svg = `<svg viewBox="0 0 660 260" style="width:100%;border:2px solid var(--linea);background:#f3f8f1" role="img" aria-label="Mapa esquemático del tramo">
-    <text x="12" y="22" font-size="13" fill="#555">OESTE</text><text x="600" y="22" font-size="13" fill="#555">ESTE</text>
-    <polyline fill="none" stroke="#C8102E" stroke-width="5" stroke-dasharray="10 7" points="${m.paradas.map(p => p.x + "," + p.y).join(" ")}"/>
-    ${m.paradas.map((p, i) => {
-      const s = p.fija ? p.n : (st.orden[i - 1] || "");
-      return `<circle cx="${p.x}" cy="${p.y}" r="14" fill="${p.fija ? "#C8102E" : s ? "#fff" : "#fff"}" stroke="#111" stroke-width="2"/>
-      <text x="${p.x}" y="${p.y + 5}" text-anchor="middle" font-size="13" font-weight="700" fill="${p.fija ? "#fff" : "#111"}">${p.fija ? "★" : i}</text>
-      <text x="${Math.min(Math.max(p.x, 50), 610)}" y="${p.y + (i % 2 ? -22 : 34)}" text-anchor="middle" font-size="14" font-weight="700" fill="#111">${esc(s)}</text>`;
+function mapaSVG(m, orden) {
+  const ps = m.paradas, lat0 = ps.reduce((s, p) => s + p.lat, 0) / ps.length, k = Math.cos(lat0 * Math.PI / 180);
+  const xs = ps.map(p => p.lon * k), ys = ps.map(p => p.lat);
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const esc_ = Math.min(520 / Math.max(maxX - minX, 1e-6), 320 / Math.max(maxY - minY, 1e-6));
+  const W = 660, H = Math.max(200, Math.round((maxY - minY) * esc_) + 90);
+  const offX = (W - (maxX - minX) * esc_) / 2;
+  const P = ps.map((p, i) => ({ ...p, x: offX + (xs[i] - minX) * esc_, y: H - 45 - (ys[i] - minY) * esc_ }));
+  const vertical = (maxY - minY) * esc_ > (maxX - minX) * esc_;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;max-height:440px;border:2px solid var(--linea);background:#f3f8f1" role="img" aria-label="Mapa esquemático del tramo">
+    <g transform="translate(626,16)"><polygon points="0,0 -7,18 7,18" fill="#111"/><text x="0" y="34" text-anchor="middle" font-size="14" font-weight="700">N</text></g>
+    <polyline fill="none" stroke="#C8102E" stroke-width="5" stroke-dasharray="10 7" points="${P.map(p => p.x.toFixed(1) + "," + p.y.toFixed(1)).join(" ")}"/>
+    ${P.map((p, i) => {
+      const s = p.fija ? p.n : (orden[i - 1] || "");
+      const lx = vertical ? p.x + 22 : Math.min(Math.max(p.x, 60), 600), ly = vertical ? p.y + 5 : p.y + (i % 2 ? -22 : 34), anc = vertical ? "start" : "middle";
+      return `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="14" fill="${p.fija ? "#C8102E" : "#fff"}" stroke="#111" stroke-width="2"/>
+      <text x="${p.x.toFixed(1)}" y="${(p.y + 5).toFixed(1)}" text-anchor="middle" font-size="13" font-weight="700" fill="${p.fija ? "#fff" : "#111"}">${p.fija ? "★" : i}</text>
+      <text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${anc}" font-size="14" font-weight="700" fill="#111">${esc(s)}</text>`;
     }).join("")}
   </svg>`;
+}
+function pM1(a) {
+  const m = M(), st = S.m1, libres = m.paradas.filter(p => !p.fija);
+  const cienOps = ["Porque así se andan al menos los últimos 100 km y se consigue la Compostela", "Porque es la ciudad más grande de Galicia", m.falsoInicio];
   a.innerHTML = cabecera("Misión 1 · Encuentra el camino", `${m.camino}: vuestro tramo empieza en ${m.inicio} y termina en Santiago.`) +
     `<div class="instr">Pulsad las paradas en orden, de ${m.inicio} a Santiago. Se colocarán en el mapa (puntos 1 a 5).</div>
-    ${APOYO ? `<div class="pista"><b>Pista:</b> Santiago está al oeste (a la izquierda). Id de derecha a izquierda. La parada más cercana a Sarria es Portomarín.</div>` : ""}
-    ${svg}
-    <div style="margin:10px 0">${libres.map(p => p.n).sort().map(n => `<span class="chip ${st.orden.includes(n) ? "usado" : ""}" data-p="${esc(n)}">${esc(n)}</span>`).join("")}</div>
+    ${APOYO ? `<div class="pista"><b>Pista:</b> ${m.pistaRuta}</div>` : ""}
+    ${mapaSVG(m, st.orden)}
+    <div style="margin:10px 0">${libres.map(p => p.n).sort((x, y) => x.localeCompare(y)).map(n => `<span class="chip ${st.orden.includes(n) ? "usado" : ""}" data-p="${esc(n)}">${esc(n)}</span>`).join("")}</div>
     <div class="fila" style="margin-top:0"><button class="btn sec" id="deshacer"><i class="ti ti-arrow-back-up"></i> Quitar la última</button></div>
     <h2>¿Es el Camino entero?</h2>
-    <div class="g2"><div><img class="foto" style="aspect-ratio:auto;object-fit:contain" src="${m.mapaCompleto.src}" alt="Mapa del ${esc(m.camino)} completo" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'pista',textContent:'(No se ha podido cargar el mapa)'}))"><p class="credito">${m.mapaCompleto.credito}</p></div>
+    <div class="g2"><div><img class="foto" style="aspect-ratio:auto;object-fit:contain;max-height:360px" src="${m.mapaCompleto.src}" alt="Mapa de los caminos" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'pista',textContent:'(No se ha podido cargar el mapa)'}))"><p class="credito">${m.mapaCompleto.credito}</p></div>
     <div><div class="pista"><b>Tarjeta:</b> ${m.completo}</div>
     <label class="et">¿Cuántos km tiene vuestro tramo?</label>
-    ${["Unos 115 km", "Unos 780 km", "Unos 30 km"].map((o, i) => `<button class="op ${st.km === i ? "sel" : ""}" data-km="${i}" style="margin-bottom:6px">${o}</button>`).join("")}
+    ${mezcla(3, "km" + S.modelo).map(i => `<button class="op ${st.km === i ? "sel" : ""}" data-km="${i}" style="margin-bottom:6px">${m.kmOpciones[i]}</button>`).join("")}
     </div></div>
     <label class="et" style="margin-top:14px">¿Por qué mucha gente empieza en ${m.inicio}?</label>
-    ${APOYO ? `<div class="pista"><b>Pista:</b> busca en la tarjeta de la credencial cuántos km hay que andar como mínimo.</div>` : ""}
     <div class="pista"><b>Tarjeta · La Compostela:</b> es el documento que da la Oficina del Peregrino. Para conseguirla hay que andar al menos los últimos 100 km y llevar la credencial sellada.</div>
-    <div class="g3">${["Porque así se andan al menos los últimos 100 km y se consigue la Compostela", "Porque es la ciudad más grande de Galicia", "Porque allí empieza el Camino Francés"].map((o, i) => `<button class="op ${st.cien === i ? "sel" : ""}" data-c="${i}">${o}</button>`).join("")}</div>
+    <div class="g3">${mezcla(3, "cien" + S.modelo).map(i => `<button class="op ${st.cien === i ? "sel" : ""}" data-c="${i}">${cienOps[i]}</button>`).join("")}</div>
     <div id="res1">${st.ok ? fb(true, "¡Sello de la Ruta conseguido!") : ""}</div><p class="err" id="err1"></p>
     <div class="fila"><button class="btn" id="comp1"><i class="ti ti-check"></i> Comprobar</button>${siguiente("m1")}<span id="guardado" class="guardado"></span></div>`;
   enlazarIr(a);
@@ -283,7 +295,7 @@ function pM1(a) {
   $("#comp1").onclick = () => {
     if (st.orden.length < libres.length || st.km === null || st.cien === null) { $("#err1").textContent = "Completad el mapa y contestad las dos preguntas."; return; }
     st.int++; const e = evalua(S).m1; st.ok = e.orden && e.km && e.cien;
-    const f = []; if (!e.orden) f.push("El orden de las paradas no es correcto. Mirad dónde está Santiago (oeste)."); if (!e.km) f.push("Revisad los km: sumad las etapas (mirad la tarjeta)."); if (!e.cien) f.push("Revisad por qué se empieza en " + m.inicio + ": leed la tarjeta de la Compostela.");
+    const f = []; if (!e.orden) f.push("El orden de las paradas no es correcto. Mirad la flecha del norte y dónde está Santiago."); if (!e.km) f.push("Revisad los km: es solo vuestro tramo, no el Camino entero."); if (!e.cien) f.push("Revisad por qué se empieza en " + m.inicio + ": leed la tarjeta de la Compostela.");
     guardar(true); pintaCab();
     $("#res1").innerHTML = st.ok ? fb(true, `¡Sello de la Ruta conseguido! Vuestro tramo: ${libres.map(p => p.n + " (km " + p.km + ")").join(" → ")}.`) : fb(false, f.join("<br>"));
   };
@@ -378,11 +390,11 @@ function pM4(a) {
     <h2>La acogida al peregrino</h2>
     <div class="pista"><b>Tarjeta:</b> en la Edad Media, iglesias, monasterios, reyes y cofradías mantenían hospitales para acoger a los peregrinos. Allí les daban cama, comida y cuidados, casi siempre gratis y durante pocas noches.</div>
     <label class="et">¿Quién pagaba normalmente la estancia del peregrino en un hospital?</label>
-    <div class="g3">${["Nadie: era caridad de la Iglesia, los reyes o las cofradías", "El peregrino, como en un hotel", "Los peregrinos no podían dormir en ningún sitio"].map((o, i) => `<button class="op ${st.acog === i ? "sel" : ""}" data-ac="${i}">${o}</button>`).join("")}</div>
+    <div class="g3">${(o => mezcla(3, "acog").map(i => `<button class="op ${st.acog === i ? "sel" : ""}" data-ac="${i}">${o[i]}</button>`).join(""))(["Nadie: era caridad de la Iglesia, los reyes o las cofradías", "El peregrino, como en un hotel", "Los peregrinos no podían dormir en ningún sitio"])}</div>
     <h2>Un camino de intercambios</h2>
     <div class="pista"><b>Tarjeta:</b> por el Camino pasaban peregrinos de Francia, Alemania, Italia, Inglaterra… Hablaban lenguas distintas, contaban noticias, compraban y vendían, y con ellos viajaron ideas y estilos artísticos como el románico.</div>
     <label class="et">¿Qué viajaba con los peregrinos?</label>
-    <div class="g3">${["Ideas, noticias, lenguas, productos y estilos artísticos", "Solo dinero", "Nada: cada uno iba solo y sin hablar"].map((o, i) => `<button class="op ${st.inter === i ? "sel" : ""}" data-in="${i}">${o}</button>`).join("")}</div>
+    <div class="g3">${(o => mezcla(3, "inter").map(i => `<button class="op ${st.inter === i ? "sel" : ""}" data-in="${i}">${o[i]}</button>`).join(""))(["Ideas, noticias, lenguas, productos y estilos artísticos", "Solo dinero", "Nada: cada uno iba solo y sin hablar"])}</div>
     <label class="et" style="margin-top:14px">Completad la frase</label>
     <input type="text" id="fr4" value="${esc(st.frase || (APOYO ? "En un hospital de peregrinos te podías encontrar con gente de … y por eso …" : ""))}" placeholder="En un hospital de peregrinos te podías encontrar con gente de … y por eso …">
     <div id="res4">${st.ok ? fb(true, "¡Sello de la Historia conseguido!") : ""}</div><p class="err" id="err4"></p>
@@ -457,7 +469,7 @@ function pFin(a) {
 }
 function pintaInd(c, n) {
   const C = D.CIERRE, r = S.ind[n] || (S.ind[n] = {}), hecho = !!r.entregado;
-  const ops = (q, campo) => q.o.map((o, i) => `<button class="op ${r[campo] === i ? "sel" : ""}" data-${campo}="${i}" ${hecho ? "disabled" : ""}>${o}</button>`).join("");
+  const ops = (q, campo) => (campo === "q3" ? [...q.o.keys()] : mezcla(q.o.length, campo)).map(i => `<button class="op ${r[campo] === i ? "sel" : ""}" data-${campo}="${i}" ${hecho ? "disabled" : ""}>${q.o[i]}</button>`).join("");
   c.innerHTML = `<div class="caja"><h2 style="margin-top:0">${esc(n)}</h2>
     <label class="et">1. ${C.q1.t}</label><div class="g3">${ops(C.q1, "q1")}</div>
     <label class="et" style="margin-top:14px">2. ${C.q2.t}</label><div class="g3">${ops(C.q2, "q2")}</div>
