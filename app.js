@@ -155,7 +155,7 @@ function pintaCab() {
   if (profe) { c.innerHTML = `<span class="marca"><i class="ti ti-shield-check"></i> Panel del profesor · Destino Santiago</span><button class="tab panel" id="salirProfe">Salir del panel</button>`; $("#salirProfe").onclick = () => { profe = false; render(); }; return; }
   c.innerHTML = `<span class="marca"><i class="ti ti-route"></i> 2.º ESO · Destino Santiago</span>` +
     (S ? `<span class="sellos">Sellos: ${sellos()}/5</span>` : "") +
-    TABS.map(t => `<button class="tab ${t.id === tab ? "on" : ""} ${S && S[t.id] && S[t.id].ok ? "hecha" : ""}" data-t="${t.id}" style="${puedeIr(t.id) ? "" : "opacity:.45"}">${puedeIr(t.id) ? "" : '<i class="ti ti-lock"></i> '}${t.t}</button>`).join("") +
+    (!S ? "" : TABS.map(t => `<button class="tab ${t.id === tab ? "on" : ""} ${S && S[t.id] && S[t.id].ok ? "hecha" : ""}" data-t="${t.id}" style="${puedeIr(t.id) ? "" : "opacity:.45"}">${puedeIr(t.id) ? "" : '<i class="ti ti-lock"></i> '}${t.t}</button>`).join("")) +
     `<button class="tab panel" id="irProfe" title="Panel del profesor"><i class="ti ti-lock"></i></button>`;
   c.querySelectorAll("[data-t]").forEach(b => b.onclick = () => {
     if (b.dataset.t !== "brief" && !S) { tab = "brief"; render(); const e = $("#errLogin"); if (e) e.textContent = "Primero elegid grupo y nombres y pulsad «Empezar»."; return; }
@@ -194,68 +194,77 @@ function avisoFlotante(t) { let d = $("#avisoF"); if (!d) { d = document.createE
 function fb(ok, txt) { return `<div class="fb ${ok ? "ok" : "mal"}">${txt}</div>`; }
 
 /* ----- 0 · Briefing ----- */
+let ent = { grupo: null, nombre: null, eligiendo: false };
+function nomCorto(n) {
+  const [ap, no] = String(n).split(",").map(x => x.trim()); if (!no) return n;
+  const w = ap.split(" "), out = []; for (const x of w) { out.push(x); if (!/^(de|del|la|las|los)$/i.test(x)) break; }
+  return `${no} ${out.join(" ")}`;
+}
 async function pBrief(a) {
-  const grupos = Object.keys(L);
+  if (!S) return pEntrada(a);
   a.innerHTML = cabecera("Briefing · Destino Santiago", "Simulación escolar. Los precios, los personajes y los imprevistos son inventados.") +
-    `<div class="reto"><b>Vuestro reto:</b> salís de Sevilla con ${D.PRESUPUESTO} € cada uno. Tenéis ${D.DIAS} días para llegar andando a Santiago. ¿Lo conseguiréis?</div>
-    <h2>Cómo se juega</h2>
+    `<div class="instr" style="font-size:18px"><b>Equipo:</b> ${S.miembros.map(n => esc(nomCorto(n))).join(" · ")}<br><b>Vuestro camino:</b> ${esc(M().camino)}, desde ${esc(M().inicio)}</div>
+    <div class="reto"><b>Vuestro reto:</b> salís de Sevilla con ${D.PRESUPUESTO} € cada uno. Tenéis ${D.DIAS} días para llegar andando a Santiago. ¿Lo conseguiréis?</div>
     <div class="g3">
       <div class="caja" style="margin:0"><i class="ti ti-map-2" style="font-size:32px"></i><br><b>1.</b> Superad 5 misiones en pareja.</div>
       <div class="caja" style="margin:0"><i class="ti ti-rosette" style="font-size:32px"></i><br><b>2.</b> Cada misión superada da un sello.</div>
       <div class="caja" style="margin:0"><i class="ti ti-user" style="font-size:32px"></i><br><b>3.</b> Al llegar, cada uno responde 3 preguntas solo.</div>
     </div>
-    <div class="caja" id="login"></div>
     <h2>Vuestra credencial</h2>${credencial()}
     <h2><i class="ti ti-bulb"></i> Ejemplo resuelto (no cuenta para nota)</h2>
-    <div class="caja" id="ejemplo"></div>`;
-  pintaEjemplo($("#ejemplo"));
-  const lg = $("#login");
-  if (S) {
-    lg.innerHTML = `<p style="margin:0"><b>Equipo:</b> ${S.miembros.map(esc).join(" · ")}<br><b>Grupo:</b> ${esc(S.grupo)} · <b>Camino:</b> ${esc(M().camino)} desde ${esc(M().inicio)} (modelo ${S.modelo})</p>
-      <div class="fila"><button class="btn" data-ir="m1">Empezar misión 1 <i class="ti ti-arrow-right"></i></button><button class="btn sec" id="cambiar">No somos nosotros</button></div>`;
-    enlazarIr(lg); $("#cambiar").onclick = () => { S = null; sesion = null; localStorage.removeItem("ds_sesion"); render(); };
+    <div class="caja" id="ejemplo"></div>
+    <div class="fila"><button class="btn" data-ir="m1" style="font-size:20px;padding:14px 22px">Empezar misión 1 <i class="ti ti-arrow-right"></i></button><button class="btn sec" id="cambiar">No somos nosotros</button></div>`;
+  pintaEjemplo($("#ejemplo")); enlazarIr(a);
+  $("#cambiar").onclick = () => { S = null; sesion = null; ent = { grupo: null, nombre: null, eligiendo: false }; localStorage.removeItem("ds_sesion"); render(); };
+}
+async function pEntrada(a) {
+  const grandes = "font-size:20px;padding:16px;text-align:center";
+  let html = `<h1 style="text-align:center;margin-top:10px">¡Hola, peregrino!</h1><p class="sub" style="text-align:center">Destino Santiago · Geografía e Historia</p>`;
+  if (!ent.grupo) {
+    html += `<h2 style="text-align:center">¿En qué clase estás?</h2><div class="g3" style="max-width:600px;margin:0 auto">${Object.keys(L).map(g => `<button class="op" data-gr="${g}" style="${grandes};font-size:28px"><b>${g}</b></button>`).join("")}</div>`;
+    a.innerHTML = html;
+    a.querySelectorAll("[data-gr]").forEach(b => b.onclick = () => { ent.grupo = b.dataset.gr; pEntrada(a); });
     return;
   }
-  lg.innerHTML = `<div class="g2">
-      <div><label class="et">Grupo</label><select id="gr"><option value="">Selecciona</option>${grupos.map(g => `<option>${g}</option>`).join("")}</select></div>
-      <div><label class="et">Tu nombre</label><select id="no" disabled><option value="">Selecciona primero el grupo</option></select></div>
-    </div><div id="equipo" style="margin-top:12px"></div><p class="err" id="errLogin"></p>
-    <div class="fila"><button class="btn" id="empezar">Empezar <i class="ti ti-arrow-right"></i></button></div>`;
-  const gr = $("#gr"), no = $("#no");
-  gr.onchange = () => { no.disabled = !gr.value; no.innerHTML = `<option value="">Selecciona</option>` + (L[gr.value] || []).map(n => `<option>${esc(n)}</option>`).join(""); $("#equipo").innerHTML = ""; };
-  let fijado = null;
-  no.onchange = async () => {
-    $("#errLogin").textContent = ""; fijado = null;
-    const eq = $("#equipo"); if (!no.value) { eq.innerHTML = ""; return; }
-    const equipos = await store.hijos(`equipos/${slug(gr.value)}`);
-    fijado = Object.values(equipos).find(e => (e.miembros || []).includes(no.value)) || null;
-    if (fijado) {
-      eq.innerHTML = `<div class="instr"><b>Tu equipo (lo ha hecho el profe):</b> ${fijado.miembros.map(esc).join(" · ")}<br><b>Vuestro camino:</b> ${esc(D.MODELOS[fijado.modelo].camino)} (modelo ${fijado.modelo})</div>`;
-    } else {
-      const otros = (L[gr.value] || []).filter(n => n !== no.value);
-      eq.innerHTML = `<div class="g3">
-        <div><label class="et">Tu pareja</label><select id="p2"><option value="">Selecciona</option>${otros.map(n => `<option>${esc(n)}</option>`).join("")}</select></div>
-        <div><label class="et">3.º (solo si sois trío)</label><select id="p3"><option value="">Nadie</option>${otros.map(n => `<option>${esc(n)}</option>`).join("")}</select></div>
-        <div><label class="et">Vuestra tarjeta</label><select id="mo">${Object.entries(D.MODELOS).map(([k, v]) => `<option value="${k}" ${v.activo ? "" : "disabled"}>${k} · ${esc(v.camino)}${v.activo ? "" : " (pronto)"}</option>`).join("")}</select></div></div>`;
-    }
-  };
-  $("#empezar").onclick = async () => {
-    const e = $("#errLogin");
-    if (!gr.value || !no.value) { e.textContent = "Elige tu grupo y tu nombre."; return; }
-    let miembros, modelo;
-    if (fijado) { miembros = fijado.miembros; modelo = fijado.modelo; }
-    else {
-      const p2 = $("#p2").value, p3 = $("#p3").value;
-      if (!p2) { e.textContent = "Elige a tu pareja."; return; }
-      if (p3 && p3 === p2) { e.textContent = "La tercera persona no puede ser tu pareja otra vez."; return; }
-      miembros = [no.value, p2].concat(p3 ? [p3] : []); modelo = $("#mo").value;
-    }
-    if (!D.MODELOS[modelo] || !D.MODELOS[modelo].activo) { e.textContent = "Ese camino todavía no está disponible. Avisa al profe."; return; }
-    const ruta = `pasaportes/${slug(gr.value)}/${equipoId(miembros)}`;
-    S = (await store.get(ruta)) || nuevoPasaporte(gr.value, miembros, modelo);
-    sesion = { grupo: gr.value, nombre: no.value, ruta }; localStorage.setItem("ds_sesion", JSON.stringify(sesion));
-    await guardar(true); tab = "m1"; render(); scrollTo(0, 0);
-  };
+  if (!ent.nombre) {
+    const lista = [...L[ent.grupo]].sort((x, y) => nomCorto(x).localeCompare(nomCorto(y)));
+    html += `<div class="fila" style="justify-content:space-between"><h2 style="margin:0">${ent.grupo} · ¿Quién eres?</h2><button class="btn sec" id="atras"><i class="ti ti-arrow-left"></i> Cambiar clase</button></div>
+      <div class="g3" style="margin-top:12px">${lista.map(n => `<button class="op" data-no="${esc(n)}" style="font-size:17px;padding:12px"><b>${esc(nomCorto(n))}</b></button>`).join("")}</div>`;
+    a.innerHTML = html;
+    $("#atras").onclick = () => { ent.grupo = null; pEntrada(a); };
+    a.querySelectorAll("[data-no]").forEach(b => b.onclick = () => { ent.nombre = b.dataset.no; pEntrada(a); });
+    return;
+  }
+  a.innerHTML = html + `<p style="text-align:center">Buscando a tu equipo…</p>`;
+  const equipos = await store.hijos(`equipos/${slug(ent.grupo)}`);
+  const fijado = Object.values(equipos || {}).find(e => e && (e.miembros || []).includes(ent.nombre)) || null;
+  const volver = `<button class="btn sec" id="noSoy"><i class="ti ti-arrow-left"></i> No soy yo</button>`;
+  if (fijado) {
+    const otros = fijado.miembros.filter(n => n !== ent.nombre).map(n => esc(nomCorto(n)));
+    a.innerHTML = html + `<div class="caja" style="max-width:600px;margin:20px auto;text-align:center;font-size:20px">
+      <p style="margin:0 0 6px">Hola, <b>${esc(nomCorto(ent.nombre))}</b></p>
+      <p style="margin:0 0 6px">Tu equipo: <b>${otros.join(" y ")}</b></p>
+      <p style="margin:0">Vuestro camino: <b>${esc(D.MODELOS[fijado.modelo].camino)}</b>, desde ${esc(D.MODELOS[fijado.modelo].inicio)}</p>
+      <div class="fila" style="justify-content:center"><button class="btn" id="vamos" style="font-size:22px;padding:14px 30px">¡Empezar!</button>${volver}</div></div><p class="err" id="errLogin" style="text-align:center"></p>`;
+    $("#vamos").onclick = () => entrar(fijado.miembros, fijado.modelo);
+  } else if (!ent.eligiendo) {
+    a.innerHTML = html + `<div class="caja" style="max-width:600px;margin:20px auto;text-align:center;font-size:18px">
+      <p>Hola, <b>${esc(nomCorto(ent.nombre))}</b>. Todavía no tienes equipo.</p><p><b>Avisa a tu profe.</b></p>
+      <div class="fila" style="justify-content:center">${volver}<button class="btn sec" id="elegir">El profe me ha dicho que elija mi pareja</button></div></div>`;
+    $("#elegir").onclick = () => { ent.eligiendo = true; pEntrada(a); };
+  } else {
+    const otros = L[ent.grupo].filter(n => n !== ent.nombre).sort((x, y) => nomCorto(x).localeCompare(nomCorto(y)));
+    a.innerHTML = html + `<div class="fila" style="justify-content:space-between"><h2 style="margin:0">¿Quién es tu pareja?</h2>${volver}</div>
+      <div class="g3" style="margin-top:12px">${otros.map(n => `<button class="op" data-p2="${esc(n)}" style="font-size:17px;padding:12px"><b>${esc(nomCorto(n))}</b></button>`).join("")}</div><p class="err" id="errLogin"></p>`;
+    a.querySelectorAll("[data-p2]").forEach(b => b.onclick = () => { const act = Object.keys(D.MODELOS).filter(k => D.MODELOS[k].activo); entrar([ent.nombre, b.dataset.p2], act[hashN(ent.nombre + b.dataset.p2) % act.length]); });
+  }
+  const ns = $("#noSoy"); if (ns) ns.onclick = () => { ent.nombre = null; ent.eligiendo = false; pEntrada(a); };
+}
+async function entrar(miembros, modelo) {
+  const ruta = `pasaportes/${slug(ent.grupo)}/${equipoId(miembros)}`;
+  S = (await store.get(ruta)) || nuevoPasaporte(ent.grupo, miembros, modelo);
+  sesion = { grupo: ent.grupo, nombre: ent.nombre, ruta }; localStorage.setItem("ds_sesion", JSON.stringify(sesion));
+  await guardar(true); tab = "brief"; render(); scrollTo(0, 0);
 }
 function pintaEjemplo(c) {
   const E = D.EJEMPLO;
